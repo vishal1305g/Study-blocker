@@ -1,0 +1,5 @@
+/* FocusForge — Instagram Reels CSS Blocker */
+/* Hide reels nav and reel content */
+a[href="/reels/"] {
+  display: none !important;
+}

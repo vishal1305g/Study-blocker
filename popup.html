@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>FocusForge</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500;600;700&display=swap');
+  :root {
+    --bg:#0a0a0f; --card:#16161f; --surface:#111118;
+    --border:#2a2a3a; --accent:#f5a623; --red:#e8435a;
+    --green:#22c55e; --text:#e8e8f0; --muted:#6b6b7e;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    width: 380px; min-height: 500px;
+    background: var(--bg); color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 14px;
+    overflow-x: hidden;
+  }
+  /* Header */
+  .header {
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 14px 16px;
+    background: linear-gradient(135deg, #111118, #0a0a0f);
+    border-bottom: 1px solid var(--border);
+  }
+  .logo { font-family: 'Space Mono', monospace; font-size: 16px; font-weight:700; color: var(--accent); }
+  .logo span { color: var(--text); }
+  .session-badge {
+    display: inline-flex; align-items:center; gap:6px;
+    font-size: 11px; padding: 4px 10px; border-radius: 20px;
+    font-weight: 700; letter-spacing: 0.5px;
+  }
+  .session-badge.off { background:rgba(107,107,126,.15); color:var(--muted); border:1px solid var(--border); }
+  .session-badge.on  { background:rgba(245,166,35,.15); color:var(--accent); border:1px solid rgba(245,166,35,.3); }
+  .dot { width:7px; height:7px; border-radius:50%; }
+  .dot-off { background:var(--muted); }
+  .dot-on  { background:var(--accent); box-shadow:0 0 6px var(--accent); animation:pulse 1.5s infinite; }
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+  /* Tabs */
+  .tabs { display:flex; border-bottom:1px solid var(--border); }
+  .tab {
+    flex:1; background:none; border:none; color:var(--muted);
+    padding:10px 6px; font-family:'DM Sans',sans-serif; font-size:12px;
+    font-weight:600; cursor:pointer; border-bottom:2px solid transparent;
+    transition:all .2s; text-transform:uppercase; letter-spacing:.5px;
+  }
+  .tab.active { color:var(--accent); border-bottom-color:var(--accent); }
+  .tab:hover { color:var(--text); }
+
+  /* Tab panes */
+  .pane { display:none; padding:16px; }
+  .pane.active { display:block; }
+
+  /* Timer ring */
+  .ring-wrap { position:relative; display:flex; justify-content:center; margin:8px 0 12px; }
+  .ring-wrap svg { transform:rotate(-90deg); }
+  .ring-center {
+    position:absolute; top:50%; left:50%;
+    transform:translate(-50%,-50%); text-align:center;
+  }
+  .timer-digits { font-family:'Space Mono',monospace; font-size:36px; font-weight:700; color:var(--text); }
+  .timer-phase-lbl { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-top:2px; }
+  .pomo-phase { font-size:13px; font-weight:700; color:var(--accent); text-align:center; margin-bottom:4px; }
+  .pomo-dots { display:flex; justify-content:center; gap:6px; margin-bottom:10px; }
+  .pdot { width:10px; height:10px; border-radius:50%; background:var(--border); }
+  .pdot.done { background:var(--accent); }
+  .pdot.active { background:var(--green); box-shadow:0 0 6px var(--green); animation:pulse 1s infinite; }
+
+  .ctrl-row { display:flex; gap:8px; justify-content:center; margin-top:4px; }
+  .btn {
+    border:none; border-radius:8px; padding:8px 16px;
+    font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600;
+    cursor:pointer; transition:all .15s; display:inline-flex; align-items:center; gap:5px;
+  }
+  .btn-primary { background:var(--accent); color:#000; }
+  .btn-primary:hover { background:#ffc145; }
+  .btn-ghost { background:transparent; border:1px solid var(--border); color:var(--text); }
+  .btn-ghost:hover { border-color:var(--accent); color:var(--accent); }
+  .btn-red { background:var(--red); color:#fff; }
+  .btn-green { background:var(--green); color:#000; }
+  .btn-sm { padding:5px 12px; font-size:12px; }
+  .btn-full { width:100%; justify-content:center; }
+
+  /* Session toggle big */
+  .session-toggle {
+    width:100%; padding:14px; border-radius:10px; border:none;
+    font-family:'DM Sans',sans-serif; font-size:15px; font-weight:700;
+    cursor:pointer; transition:all .2s; margin-bottom:12px;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .session-toggle.start { background:var(--accent); color:#000; }
+  .session-toggle.start:hover { background:#ffc145; }
+  .session-toggle.stop  { background:rgba(232,67,90,.15); color:var(--red); border:1px solid rgba(232,67,90,.3); }
+  .session-toggle.stop:hover  { background:rgba(232,67,90,.25); }
+
+  /* Settings row */
+  .setting-row {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 12px; background:var(--surface);
+    border:1px solid var(--border); border-radius:8px; margin-bottom:6px;
+  }
+  .setting-left { display:flex; align-items:center; gap:10px; }
+  .setting-icon { font-size:18px; }
+  .setting-name { font-size:13px; font-weight:600; }
+  .setting-desc { font-size:11px; color:var(--muted); }
+  .toggle {
+    width:40px; height:22px; background:var(--border);
+    border-radius:11px; cursor:pointer; position:relative; transition:.3s; flex-shrink:0;
+  }
+  .toggle::after {
+    content:''; position:absolute; top:2px; left:2px;
+    width:18px; height:18px; background:#fff; border-radius:50%; transition:.3s;
+    box-shadow:0 1px 3px rgba(0,0,0,.4);
+  }
+  .toggle.on { background:var(--accent); }
+  .toggle.on::after { transform:translateX(18px); }
+  .toggle.on-red { background:var(--red); }
+
+  /* Pomo settings */
+  .pomo-cfg { display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px; margin-bottom:12px; }
+  .cfg-item label { font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; display:block; margin-bottom:4px; }
+  .cfg-item input {
+    width:100%; text-align:center; background:var(--surface); border:1px solid var(--border);
+    color:var(--text); border-radius:6px; padding:6px 4px; font-family:'Space Mono',monospace;
+    font-size:16px; font-weight:700;
+  }
+  .cfg-item input:focus { outline:none; border-color:var(--accent); }
+
+  /* Channels */
+  .ch-list { max-height:160px; overflow-y:auto; margin-bottom:10px; }
+  .ch-item {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:7px 10px; background:var(--surface); border:1px solid rgba(34,197,94,.2);
+    border-radius:6px; margin-bottom:5px; font-size:13px;
+  }
+  .ch-item-left { display:flex; align-items:center; gap:7px; }
+  .add-row { display:flex; gap:6px; }
+  .input { flex:1; background:var(--surface); border:1px solid var(--border); color:var(--text); border-radius:6px; padding:7px 10px; font-size:13px; }
+  .input:focus { outline:none; border-color:var(--accent); }
+  .input::placeholder { color:var(--muted); }
+
+  /* Blocked list */
+  .block-list { max-height:140px; overflow-y:auto; margin-bottom:10px; }
+  .bl-item {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:7px 10px; background:var(--surface); border:1px solid rgba(232,67,90,.2);
+    border-radius:6px; margin-bottom:5px; font-size:13px; color:var(--muted);
+  }
+
+  /* Stopwatch */
+  .sw-display {
+    font-family:'Space Mono',monospace; font-size:42px; font-weight:700;
+    text-align:center; letter-spacing:-2px; padding:12px 0;
+    color:var(--text);
+  }
+  .sw-ms { font-size:22px; color:var(--muted); }
+
+  /* Quote strip */
+  .quote-strip {
+    background:rgba(245,166,35,.06);
+    border-top:1px solid rgba(245,166,35,.15);
+    padding:10px 14px; font-size:11px; color:var(--muted);
+    font-style:italic; line-height:1.5;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width:4px; }
+  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+  /* Pomodoro count badge */
+  .pomo-count { font-size:11px; color:var(--muted); text-align:center; margin-top:6px; }
+  .pomo-count span { color:var(--accent); font-weight:700; }
+
+  /* Timer type selector */
+  .type-pills { display:flex; gap:6px; margin-bottom:12px; }
+  .type-pill {
+    flex:1; background:var(--surface); border:1px solid var(--border); color:var(--muted);
+    border-radius:6px; padding:6px; font-size:11px; font-weight:600; cursor:pointer;
+    text-align:center; transition:all .2s; text-transform:uppercase; letter-spacing:.5px;
+  }
+  .type-pill.active { background:rgba(245,166,35,.12); border-color:rgba(245,166,35,.4); color:var(--accent); }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo">Focus<span>Forge</span></div>
+  <div class="session-badge off" id="sessionBadge">
+    <div class="dot dot-off" id="sessionDot"></div>
+    <span id="sessionBadgeText">Inactive</span>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('timer',this)">⏱ Timer</button>
+  <button class="tab" onclick="switchTab('blocker',this)">🛡 Block</button>
+  <button class="tab" onclick="switchTab('channels',this)">📺 Channels</button>
+  <button class="tab" onclick="switchTab('stats',this)">📊 Stats</button>
+</div>
+
+<!-- ── TIMER ── -->
+<div class="pane active" id="pane-timer">
+  <!-- Session Toggle -->
+  <button class="session-toggle start" id="mainSessionBtn" onclick="toggleSession()">▶ Start Focus Session</button>
+
+  <!-- Timer type -->
+  <div class="type-pills">
+    <div class="type-pill active" onclick="setTimerType('pomo',this)">🍅 Pomodoro</div>
+    <div class="type-pill" onclick="setTimerType('sw',this)">⏲ Stopwatch</div>
+    <div class="type-pill" onclick="setTimerType('custom',this)">⏳ Custom</div>
+  </div>
+
+  <!-- Pomodoro -->
+  <div id="pomo-section">
+    <div class="pomo-cfg">
+      <div class="cfg-item"><label>Focus</label><input type="number" id="focusMins" value="25" min="1" max="90" onchange="resetTimer()"></div>
+      <div class="cfg-item"><label>Short Brk</label><input type="number" id="shortMins" value="5" min="1" max="30" onchange="resetTimer()"></div>
+      <div class="cfg-item"><label>Long Brk</label><input type="number" id="longMins" value="15" min="5" max="60" onchange="resetTimer()"></div>
+    </div>
+    <div class="pomo-phase" id="pomoPhase">🧠 FOCUS SESSION</div>
+    <div class="pomo-dots" id="pomoDots"></div>
+
+    <div class="ring-wrap">
+      <svg width="150" height="150">
+        <circle cx="75" cy="75" r="65" fill="none" stroke="#2a2a3a" stroke-width="7"/>
+        <circle id="timerArc" cx="75" cy="75" r="65" fill="none" stroke="#f5a623" stroke-width="7"
+          stroke-linecap="round" stroke-dasharray="408.4" stroke-dashoffset="0"/>
+      </svg>
+      <div class="ring-center">
+        <div class="timer-digits" id="timerDisplay">25:00</div>
+        <div class="timer-phase-lbl" id="timerSub">Ready</div>
+      </div>
+    </div>
+
+    <div class="ctrl-row">
+      <button class="btn btn-ghost btn-sm" onclick="resetTimer()">↺</button>
+      <button class="btn btn-primary" id="timerBtn" onclick="toggleTimer()">▶ Start</button>
+      <button class="btn btn-ghost btn-sm" onclick="skipPhase()">⏭</button>
+    </div>
+    <div class="pomo-count">Pomodoros today: <span id="pomoCountDisplay">0</span></div>
+  </div>
+
+  <!-- Stopwatch -->
+  <div id="sw-section" style="display:none">
+    <div class="sw-display">
+      <span id="swH">00</span>:<span id="swM">00</span>:<span id="swS">00</span><span class="sw-ms">.<span id="swMs">00</span></span>
+    </div>
+    <div class="ctrl-row">
+      <button class="btn btn-ghost btn-sm" onclick="swReset()">↺ Reset</button>
+      <button class="btn btn-primary" id="swBtn" onclick="swToggle()">▶ Start</button>
+      <button class="btn btn-ghost btn-sm" onclick="swLap()">🏁 Lap</button>
+    </div>
+  </div>
+
+  <!-- Custom Timer -->
+  <div id="custom-section" style="display:none">
+    <div style="margin-bottom:10px;">
+      <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:6px;">Set Duration</label>
+      <div style="display:flex;gap:8px;">
+        <input class="input" type="number" id="customH" placeholder="HH" min="0" max="12" style="text-align:center;font-family:'Space Mono',monospace;font-size:18px;">
+        <input class="input" type="number" id="customM" placeholder="MM" min="0" max="59" style="text-align:center;font-family:'Space Mono',monospace;font-size:18px;">
+      </div>
+    </div>
+    <div class="ring-wrap">
+      <svg width="150" height="150">
+        <circle cx="75" cy="75" r="65" fill="none" stroke="#2a2a3a" stroke-width="7"/>
+        <circle id="customArc" cx="75" cy="75" r="65" fill="none" stroke="#3b82f6" stroke-width="7"
+          stroke-linecap="round" stroke-dasharray="408.4" stroke-dashoffset="0"/>
+      </svg>
+      <div class="ring-center">
+        <div class="timer-digits" id="customDisplay">00:00</div>
+        <div class="timer-phase-lbl">Custom Timer</div>
+      </div>
+    </div>
+    <div class="ctrl-row">
+      <button class="btn btn-ghost btn-sm" onclick="customReset()">↺</button>
+      <button class="btn btn-primary" id="customBtn" onclick="customToggle()">▶ Start</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── BLOCKER ── -->
+<div class="pane" id="pane-blocker">
+  <div style="margin-bottom:12px;">
+    <div class="setting-row">
+      <div class="setting-left">
+        <div class="setting-icon">📱</div>
+        <div><div class="setting-name">YouTube Shorts</div><div class="setting-desc">Block /shorts URLs and feed</div></div>
+      </div>
+      <div class="toggle on" id="tog-shorts" onclick="toggleSetting('shorts',this)"></div>
+    </div>
+    <div class="setting-row">
+      <div class="setting-left">
+        <div class="setting-icon">📸</div>
+        <div><div class="setting-name">Instagram Reels</div><div class="setting-desc">Block Reels feed & tab</div></div>
+      </div>
+      <div class="toggle on" id="tog-reels" onclick="toggleSetting('reels',this)"></div>
+    </div>
+    <div class="setting-row">
+      <div class="setting-left">
+        <div class="setting-icon">🎵</div>
+        <div><div class="setting-name">TikTok</div><div class="setting-desc">Full site block</div></div>
+      </div>
+      <div class="toggle on" id="tog-tiktok" onclick="toggleSetting('tiktok',this)"></div>
+    </div>
+    <div class="setting-row">
+      <div class="setting-left">
+        <div class="setting-icon">🐦</div>
+        <div><div class="setting-name">Twitter / X</div><div class="setting-desc">Full site block</div></div>
+      </div>
+      <div class="toggle on" id="tog-twitter" onclick="toggleSetting('twitter',this)"></div>
+    </div>
+    <div class="setting-row" style="border:1px solid rgba(232,67,90,.25)">
+      <div class="setting-left">
+        <div class="setting-icon">🔒</div>
+        <div><div class="setting-name">Strict Mode</div><div class="setting-desc">Block all non-study sites + filter channels</div></div>
+      </div>
+      <div class="toggle on-red" id="tog-strict" onclick="toggleSetting('strict',this)" style="background:var(--red)"></div>
+    </div>
+    <div class="setting-row">
+      <div class="setting-left">
+        <div class="setting-icon">🔞</div>
+        <div><div class="setting-name">18+ Content</div><div class="setting-desc">Block adult & restricted content</div></div>
+      </div>
+      <div class="toggle on" id="tog-adult" onclick="toggleSetting('adult',this)"></div>
+    </div>
+  </div>
+
+  <div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Custom Block</div>
+  <div class="block-list" id="customBlockList"></div>
+  <div class="add-row">
+    <input class="input" id="customBlockInput" placeholder="e.g. reddit.com">
+    <button class="btn btn-red btn-sm" onclick="addCustomBlock()">+ Block</button>
+  </div>
+</div>
+
+<!-- ── CHANNELS ── -->
+<div class="pane" id="pane-channels">
+  <div style="font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600;text-transform:uppercase;letter-spacing:.5px">Allowed YouTube Channels</div>
+  <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Only these channels are watchable during Strict Mode sessions.</div>
+  <div class="ch-list" id="channelList"></div>
+  <div class="add-row">
+    <input class="input" id="channelInput" placeholder="e.g. 3Blue1Brown">
+    <button class="btn btn-green btn-sm" onclick="addChannel()">+ Allow</button>
+  </div>
+</div>
+
+<!-- ── STATS ── -->
+<div class="pane" id="pane-stats">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center;">
+      <div style="font-family:'Space Mono',monospace;font-size:28px;font-weight:700;color:var(--accent)" id="statPomos">0</div>
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Pomodoros</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center;">
+      <div style="font-family:'Space Mono',monospace;font-size:28px;font-weight:700;color:var(--accent)" id="statFocus">0h</div>
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Focus Time</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center;">
+      <div style="font-family:'Space Mono',monospace;font-size:28px;font-weight:700;color:var(--green)" id="statStreak">0</div>
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Day Streak 🔥</div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;text-align:center;">
+      <div style="font-family:'Space Mono',monospace;font-size:28px;font-weight:700;color:var(--green)" id="statXP">0</div>
+      <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">XP Earned</div>
+    </div>
+  </div>
+  <button class="btn btn-ghost btn-full" style="margin-bottom:10px;" onclick="claimStreak()">🔥 Mark Today Complete</button>
+  <button class="btn btn-ghost btn-full" onclick="resetStats()">↺ Reset Stats</button>
+</div>
+
+<div class="quote-strip" id="quoteStrip"></div>
+
+<script>
+// ═══ STATE ════════════════════════════
+let state = {
+  sessionActive: false, strictMode: true,
+  timerRunning: false, timerInterval: null,
+  pomoPhase: 'focus', pomoSecsLeft: 0, pomoTotalSecs: 0,
+  pomoCycle: 0, sessionCount: 1,
+  swRunning: false, swInterval: null, swMs: 0,
+  customRunning: false, customInterval: null, customSecsLeft: 0, customTotalSecs: 0,
+  totalPomos: 0, totalFocusSecs: 0, streak: 0, xp: 0,
+  allowedChannels: [], customBlocks: [],
+  settings: { shorts:true, reels:true, tiktok:true, twitter:true, strict:true, adult:true },
+  timerType: 'pomo',
+};
+const CIRC = 408.4; // 2 * PI * 65
+
+// ═══ INIT ═════════════════════════════
+async function init() {
+  const res = await chrome.storage.local.get(null);
+  state.sessionActive = res.sessionActive || false;
+  state.strictMode = res.strictMode !== undefined ? res.strictMode : true;
+  state.allowedChannels = res.allowedChannels || [];
+  state.customBlocks = res.customBlocks || [];
+  state.totalPomos = res.totalPomos || 0;
+  state.totalFocusSecs = res.totalFocusSecs || 0;
+  state.streak = res.streak || 0;
+  state.xp = res.xp || 0;
+  if (res.settings) state.settings = {...state.settings, ...res.settings};
+  
+  updateSessionUI();
+  buildPomoDots();
+  resetTimer();
+  renderChannels();
+  renderCustomBlocks();
+  updateStats();
+  loadSettingToggles();
+  setDailyQuote();
+}
+
+// ═══ TABS ══════════════════════════════
+function switchTab(name, btn) {
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('pane-'+name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ═══ SESSION TOGGLE ════════════════════
+async function toggleSession() {
+  state.sessionActive = !state.sessionActive;
+  await chrome.storage.local.set({ sessionActive: state.sessionActive, strictMode: state.strictMode });
+  await chrome.runtime.sendMessage({ type:'SET_SESSION', active:state.sessionActive, strict:state.strictMode });
+  updateSessionUI();
+}
+
+function updateSessionUI() {
+  const btn = document.getElementById('mainSessionBtn');
+  const badge = document.getElementById('sessionBadge');
+  const dot = document.getElementById('sessionDot');
+  const txt = document.getElementById('sessionBadgeText');
+
+  if (state.sessionActive) {
+    btn.textContent = '⏹ End Session';
+    btn.className = 'session-toggle stop';
+    badge.className = 'session-badge on';
+    dot.className = 'dot dot-on';
+    txt.textContent = 'Active';
+  } else {
+    btn.textContent = '▶ Start Focus Session';
+    btn.className = 'session-toggle start';
+    badge.className = 'session-badge off';
+    dot.className = 'dot dot-off';
+    txt.textContent = 'Inactive';
+  }
+}
+
+// ═══ TIMER TYPE ══════════════════════
+function setTimerType(type, el) {
+  state.timerType = type;
+  document.querySelectorAll('.type-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('pomo-section').style.display = type==='pomo'?'block':'none';
+  document.getElementById('sw-section').style.display = type==='sw'?'block':'none';
+  document.getElementById('custom-section').style.display = type==='custom'?'block':'none';
+}
+
+// ═══ POMODORO ════════════════════════
+function resetTimer() {
+  clearInterval(state.timerInterval);
+  state.timerRunning = false;
+  state.pomoPhase = 'focus';
+  state.sessionCount = 1;
+  state.pomoCycle = 0;
+  document.getElementById('timerBtn').textContent = '▶ Start';
+  setPomoSecs();
+  buildPomoDots();
+  updateTimerArc();
+}
+
+function setPomoSecs() {
+  const focusM = parseInt(document.getElementById('focusMins').value)||25;
+  const shortM = parseInt(document.getElementById('shortMins').value)||5;
+  const longM  = parseInt(document.getElementById('longMins').value)||15;
+  const map = {focus:focusM*60, short:shortM*60, long:longM*60};
+  state.pomoSecsLeft = map[state.pomoPhase];
+  state.pomoTotalSecs = map[state.pomoPhase];
+  updateTimerDisplay();
+}
+
+function toggleTimer() {
+  if (state.timerRunning) {
+    clearInterval(state.timerInterval);
+    state.timerRunning = false;
+    document.getElementById('timerBtn').textContent = '▶ Resume';
+  } else {
+    state.timerRunning = true;
+    document.getElementById('timerBtn').textContent = '⏸ Pause';
+    state.timerInterval = setInterval(() => {
+      if (state.pomoPhase === 'focus') state.totalFocusSecs++;
+      state.pomoSecsLeft--;
+      updateTimerDisplay();
+      updateTimerArc();
+      if (state.pomoSecsLeft <= 0) {
+        clearInterval(state.timerInterval);
+        state.timerRunning = false;
+        phaseComplete();
+      }
+    }, 1000);
+  }
+}
+
+function phaseComplete() {
+  if (state.pomoPhase === 'focus') {
+    state.totalPomos++;
+    state.pomoCycle++;
+    state.xp += 25;
+    saveStats();
+    showNotif();
+    state.pomoPhase = state.pomoCycle % 4 === 0 ? 'long' : 'short';
+    state.sessionCount = Math.min(state.sessionCount+1, 4);
+  } else {
+    state.pomoPhase = 'focus';
+    if (state.sessionCount > 4) state.sessionCount = 1;
+  }
+  buildPomoDots();
+  setPomoSecs();
+  updateTimerArc();
+  document.getElementById('timerBtn').textContent = '▶ Start';
+  updateStats();
+}
+
+function skipPhase() {
+  clearInterval(state.timerInterval);
+  state.timerRunning = false;
+  phaseComplete();
+}
+
+function updateTimerDisplay() {
+  const m = Math.floor(state.pomoSecsLeft/60);
+  const s = state.pomoSecsLeft%60;
+  document.getElementById('timerDisplay').textContent = pad(m)+':'+pad(s);
+  const labels = {focus:'🧠 FOCUS',short:'☕ SHORT BREAK',long:'🛌 LONG BREAK'};
+  document.getElementById('pomoPhase').textContent = labels[state.pomoPhase];
+  document.getElementById('timerSub').textContent = `Session ${state.sessionCount} of 4`;
+}
+
+function updateTimerArc() {
+  const arc = document.getElementById('timerArc');
+  const pct = 1 - (state.pomoSecsLeft / state.pomoTotalSecs);
+  arc.style.strokeDashoffset = CIRC * (1-pct);
+  const colors = {focus:'#f5a623',short:'#22c55e',long:'#3b82f6'};
+  arc.style.stroke = colors[state.pomoPhase];
+}
+
+function buildPomoDots() {
+  const el = document.getElementById('pomoDots');
+  el.innerHTML = '';
+  for (let i=1;i<=4;i++) {
+    const d = document.createElement('div');
+    d.className = 'pdot' + (i<state.sessionCount?' done':i===state.sessionCount?' active':'');
+    el.appendChild(d);
+  }
+}
+
+// ═══ STOPWATCH ═══════════════════════
+function swToggle() {
+  if (state.swRunning) {
+    clearInterval(state.swInterval);
+    state.swRunning = false;
+    document.getElementById('swBtn').textContent = '▶ Resume';
+  } else {
+    state.swRunning = true;
+    document.getElementById('swBtn').textContent = '⏸ Pause';
+    state.swInterval = setInterval(()=>{
+      state.swMs += 10;
+      updateSwDisplay();
+    }, 10);
+  }
+}
+
+function swReset() {
+  clearInterval(state.swInterval);
+  state.swRunning = false; state.swMs = 0;
+  document.getElementById('swBtn').textContent = '▶ Start';
+  updateSwDisplay();
+}
+
+function swLap() { /* lap tracking */ }
+
+function updateSwDisplay() {
+  const ms = state.swMs;
+  document.getElementById('swH').textContent = pad(Math.floor(ms/3600000));
+  document.getElementById('swM').textContent = pad(Math.floor((ms%3600000)/60000));
+  document.getElementById('swS').textContent = pad(Math.floor((ms%60000)/1000));
+  document.getElementById('swMs').textContent = pad(Math.floor((ms%1000)/10));
+}
+
+// ═══ CUSTOM TIMER ════════════════════
+function customToggle() {
+  if (state.customRunning) {
+    clearInterval(state.customInterval);
+    state.customRunning = false;
+    document.getElementById('customBtn').textContent = '▶ Resume';
+  } else {
+    if (!state.customSecsLeft) {
+      const h = parseInt(document.getElementById('customH').value)||0;
+      const m = parseInt(document.getElementById('customM').value)||25;
+      state.customSecsLeft = h*3600 + m*60;
+      state.customTotalSecs = state.customSecsLeft;
+    }
+    state.customRunning = true;
+    document.getElementById('customBtn').textContent = '⏸ Pause';
+    state.customInterval = setInterval(()=>{
+      state.customSecsLeft--;
+      const arc = document.getElementById('customArc');
+      arc.style.strokeDashoffset = CIRC*(1-((state.customTotalSecs-state.customSecsLeft)/state.customTotalSecs));
+      const m = Math.floor(state.customSecsLeft/60), s=state.customSecsLeft%60;
+      document.getElementById('customDisplay').textContent = pad(m)+':'+pad(s);
+      if (state.customSecsLeft<=0) {
+        clearInterval(state.customInterval);
+        state.customRunning = false;
+        state.customSecsLeft = 0;
+        document.getElementById('customBtn').textContent = '▶ Start';
+        showNotif('⏰ Timer Done!');
+      }
+    },1000);
+  }
+}
+
+function customReset() {
+  clearInterval(state.customInterval);
+  state.customRunning=false; state.customSecsLeft=0;
+  document.getElementById('customDisplay').textContent='00:00';
+  document.getElementById('customArc').style.strokeDashoffset=0;
+  document.getElementById('customBtn').textContent='▶ Start';
+}
+
+// ═══ SETTINGS / TOGGLES ══════════════
+function toggleSetting(key, el) {
+  state.settings[key] = !state.settings[key];
+  el.classList.toggle('on', state.settings[key]);
+  if (key==='strict') {
+    state.strictMode = state.settings.strict;
+    chrome.storage.local.set({strictMode:state.strictMode});
+    chrome.runtime.sendMessage({type:'SET_SESSION',active:state.sessionActive,strict:state.strictMode});
+  }
+  chrome.storage.local.set({settings:state.settings});
+}
+
+function loadSettingToggles() {
+  Object.entries(state.settings).forEach(([k,v]) => {
+    const el = document.getElementById('tog-'+k);
+    if (el) el.classList.toggle('on', v);
+  });
+}
+
+// ═══ CHANNELS ════════════════════════
+function addChannel() {
+  const val = document.getElementById('channelInput').value.trim();
+  if (!val || state.allowedChannels.includes(val)) return;
+  state.allowedChannels.push(val);
+  document.getElementById('channelInput').value = '';
+  chrome.storage.local.set({ allowedChannels: state.allowedChannels });
+  chrome.runtime.sendMessage({ type:'ADD_CHANNEL', channel:val });
+  renderChannels();
+}
+
+function removeChannel(name) {
+  state.allowedChannels = state.allowedChannels.filter(c=>c!==name);
+  chrome.storage.local.set({ allowedChannels: state.allowedChannels });
+  chrome.runtime.sendMessage({ type:'REMOVE_CHANNEL', channel:name });
+  renderChannels();
+}
+
+function renderChannels() {
+  const el = document.getElementById('channelList');
+  el.innerHTML = state.allowedChannels.map(c => `
+    <div class="ch-item">
+      <div class="ch-item-left"><span>📺</span><span>${c}</span></div>
+      <button class="btn btn-ghost btn-sm" onclick="removeChannel('${c.replace(/'/g,"\\'")}')">✕</button>
+    </div>
+  `).join('') || '<div style="font-size:12px;color:var(--muted);padding:8px">No channels added. Add some above.</div>';
+}
+
+// ═══ CUSTOM BLOCKS ═══════════════════
+function addCustomBlock() {
+  const val = document.getElementById('customBlockInput').value.trim();
+  if (!val) return;
+  if (!state.customBlocks.includes(val)) {
+    state.customBlocks.push(val);
+    document.getElementById('customBlockInput').value = '';
+    chrome.storage.local.set({ customBlocks: state.customBlocks });
+    chrome.runtime.sendMessage({ type:'ADD_BLOCK', site:val });
+    renderCustomBlocks();
+  }
+}
+
+function removeCustomBlock(site) {
+  state.customBlocks = state.customBlocks.filter(s=>s!==site);
+  chrome.storage.local.set({ customBlocks: state.customBlocks });
+  chrome.runtime.sendMessage({ type:'REMOVE_BLOCK', site });
+  renderCustomBlocks();
+}
+
+function renderCustomBlocks() {
+  const el = document.getElementById('customBlockList');
+  el.innerHTML = state.customBlocks.map(s => `
+    <div class="bl-item">
+      <span>🌐 ${s}</span>
+      <button class="btn btn-ghost btn-sm" onclick="removeCustomBlock('${s.replace(/'/g,"\\'")}')">✕</button>
+    </div>
+  `).join('') || '<div style="font-size:12px;color:var(--muted);padding:4px">No custom blocks yet.</div>';
+}
+
+// ═══ STATS ═══════════════════════════
+function updateStats() {
+  document.getElementById('statPomos').textContent = state.totalPomos;
+  document.getElementById('statFocus').textContent = Math.floor(state.totalFocusSecs/3600)+'h '+ Math.floor((state.totalFocusSecs%3600)/60)+'m';
+  document.getElementById('statStreak').textContent = state.streak;
+  document.getElementById('statXP').textContent = state.xp;
+  document.getElementById('pomoCountDisplay').textContent = state.totalPomos;
+}
+
+function saveStats() {
+  chrome.storage.local.set({ totalPomos:state.totalPomos, totalFocusSecs:state.totalFocusSecs, xp:state.xp });
+}
+
+function claimStreak() {
+  state.streak++;
+  chrome.storage.local.set({ streak: state.streak });
+  updateStats();
+}
+
+function resetStats() {
+  if (!confirm('Reset all stats?')) return;
+  state.totalPomos=0; state.totalFocusSecs=0; state.streak=0; state.xp=0;
+  saveStats();
+  chrome.storage.local.set({streak:0});
+  updateStats();
+}
+
+// ═══ NOTIFICATION ════════════════════
+function showNotif(title, body) {
+  chrome.runtime.sendMessage({
+    type:'NOTIFY',
+    title: title||'🍅 Pomodoro Complete!',
+    body: body||'Great work! Time for a break. You earned it.'
+  });
+}
+
+// ═══ QUOTE ═══════════════════════════
+const quotes=[
+  {t:"The secret of getting ahead is getting started.",a:"Mark Twain"},
+  {t:"Hard work beats talent when talent doesn't work hard.",a:"Tim Notke"},
+  {t:"Push yourself, because no one else is going to do it for you.",a:"Unknown"},
+  {t:"An investment in knowledge pays the best interest.",a:"Benjamin Franklin"},
+  {t:"Study while others are sleeping; work while others are loafing.",a:"W.A. Ward"},
+  {t:"Dreams don't work unless you do.",a:"John C. Maxwell"},
+  {t:"The expert in anything was once a beginner.",a:"Helen Hayes"},
+];
+function setDailyQuote() {
+  const q = quotes[new Date().getDate()%quotes.length];
+  document.getElementById('quoteStrip').innerHTML = `"${q.t}" <strong>— ${q.a}</strong>`;
+}
+
+// ═══ UTILS ═══════════════════════════
+function pad(n){ return String(n).padStart(2,'0'); }
+
+init();
+</script>
+</body>
+</html>

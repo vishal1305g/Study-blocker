@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blocked — FocusForge</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: #0a0a0f;
+    font-family: 'DM Sans', system-ui, sans-serif;
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    color: #e8e8f0;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(232,67,90,0.12) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .wrap {
+    text-align: center; max-width: 520px;
+    padding: 48px 40px; position: relative; z-index: 1;
+  }
+  .lock { font-size: 80px; margin-bottom: 24px; animation: shake 0.5s ease; }
+  @keyframes shake {
+    0%,100%{transform:rotate(0)} 25%{transform:rotate(-5deg)} 75%{transform:rotate(5deg)}
+  }
+  h1 {
+    font-family: 'Courier New', monospace;
+    font-size: 42px; font-weight: 800;
+    color: #e8435a; letter-spacing: 4px; margin-bottom: 12px;
+  }
+  .site-name {
+    font-size: 22px; font-weight: 700; color: #f5a623;
+    margin-bottom: 8px;
+  }
+  .msg {
+    font-size: 15px; color: #6b6b7e; line-height: 1.7; margin-bottom: 28px;
+  }
+  .quote-box {
+    background: rgba(245,166,35,.07);
+    border: 1px solid rgba(245,166,35,.2);
+    border-left: 4px solid #f5a623;
+    border-radius: 10px; padding: 18px 22px;
+    margin-bottom: 32px;
+    font-style: italic; color: #a0a0b0; font-size: 14px; line-height: 1.6;
+    text-align: left;
+  }
+  .quote-author { font-weight: 700; font-style: normal; color: #f5a623; margin-top: 8px; font-size: 13px; }
+  .actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn {
+    border: none; border-radius: 10px; padding: 13px 28px;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    transition: all .2s; text-decoration: none; display: inline-block;
+  }
+  .btn-back { background: #f5a623; color: #000; }
+  .btn-back:hover { background: #ffc145; transform: translateY(-2px); }
+  .btn-open { background: transparent; color: #6b6b7e; border: 1px solid #2a2a3a; }
+  .btn-open:hover { color: #e8e8f0; border-color: #4a4a5a; }
+  .streak-pill {
+    display: inline-block;
+    background: rgba(34,197,94,.1);
+    border: 1px solid rgba(34,197,94,.3);
+    border-radius: 20px; padding: 6px 16px;
+    font-size: 13px; color: #22c55e; margin-bottom: 24px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="lock">🔒</div>
+  <h1>BLOCKED</h1>
+  <div class="site-name" id="siteName">This site</div>
+  <div class="msg">
+    is blocked because you're in a study session.<br>
+    <strong style="color:#e8e8f0">FocusForge is keeping you on track.</strong>
+  </div>
+  <div class="streak-pill" id="streakPill">🔥 Loading your streak...</div>
+  <div class="quote-box">
+    <div id="quoteText">Loading your daily motivation...</div>
+    <div class="quote-author" id="quoteAuthor"></div>
+  </div>
+  <div class="actions">
+    <button class="btn btn-back" onclick="history.back()">← Back to Work</button>
+    <button class="btn btn-open" onclick="chrome.runtime.sendMessage({type:'OPEN_DASHBOARD'})">Open Dashboard</button>
+  </div>
+</div>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const site = params.get('site') || 'This site';
+  document.getElementById('siteName').textContent = site;
+
+  const quotes = [
+    {t:"The secret of getting ahead is getting started.", a:"Mark Twain"},
+    {t:"Hard work beats talent when talent doesn't work hard.", a:"Tim Notke"},
+    {t:"Push yourself, because no one else is going to do it for you.", a:"Unknown"},
+    {t:"Study while others are sleeping; work while others are loafing.", a:"William Arthur Ward"},
+    {t:"Don't watch the clock; do what it does. Keep going.", a:"Sam Levenson"},
+    {t:"An investment in knowledge pays the best interest.", a:"Benjamin Franklin"},
+    {t:"Wake up with determination. Go to bed with satisfaction.", a:"George Lorimer"},
+    {t:"The expert in anything was once a beginner.", a:"Helen Hayes"},
+    {t:"It always seems impossible until it's done.", a:"Nelson Mandela"},
+    {t:"Dreams don't work unless you do.", a:"John C. Maxwell"},
+    {t:"Strive not to be a success, but to be of value.", a:"Albert Einstein"},
+  ];
+
+  const q = quotes[new Date().getDate() % quotes.length];
+  document.getElementById('quoteText').textContent = '"' + q.t + '"';
+  document.getElementById('quoteAuthor').textContent = '— ' + q.a;
+
+  // Load streak from storage
+  chrome.storage.local.get(['streak','totalPomos'], (data) => {
+    const s = data.streak || 0;
+    const p = data.totalPomos || 0;
+    document.getElementById('streakPill').textContent =
+      `🔥 ${s} day streak · ${p} Pomodoros completed`;
+  });
+</script>
+</body>
+</html>

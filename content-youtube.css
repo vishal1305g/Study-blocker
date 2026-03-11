@@ -1,0 +1,28 @@
+/* FocusForge — YouTube Shorts CSS Blocker
+   Hides Shorts UI before JavaScript runs to prevent flash */
+
+/* Shorts shelf on homepage */
+ytd-reel-shelf-renderer,
+ytd-rich-shelf-renderer[is-shorts],
+ytd-shorts,
+#shorts-container {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* Shorts player page */
+ytd-shorts-player-view,
+ytd-reel-video-renderer {
+  display: none !important;
+}
+
+/* Shorts sidebar nav item */
+ytd-guide-entry-renderer a[href="/shorts"],
+ytd-mini-guide-entry-renderer a[href="/shorts"] {
+  display: none !important;
+}
+
+/* Shorts chip on search */
+yt-chip-cloud-chip-renderer[chip-style="STYLE_HOME_FILTER"]:has(a[href*="shorts"]) {
+  display: none !important;
+}

@@ -1,0 +1,47 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": { "type": "block" },
+    "condition": {
+      "urlFilter": "*tiktok.com*",
+      "resourceTypes": ["main_frame"]
+    }
+  },
+  {
+    "id": 2,
+    "priority": 1,
+    "action": { "type": "redirect", "redirect": { "extensionPath": "/blocked.html?site=TikTok" } },
+    "condition": {
+      "urlFilter": "tiktok.com",
+      "resourceTypes": ["main_frame"]
+    }
+  },
+  {
+    "id": 3,
+    "priority": 1,
+    "action": { "type": "redirect", "redirect": { "extensionPath": "/blocked.html?site=Twitter%2FX" } },
+    "condition": {
+      "urlFilter": "twitter.com",
+      "resourceTypes": ["main_frame"]
+    }
+  },
+  {
+    "id": 4,
+    "priority": 1,
+    "action": { "type": "redirect", "redirect": { "extensionPath": "/blocked.html?site=Twitter%2FX" } },
+    "condition": {
+      "urlFilter": "x.com",
+      "resourceTypes": ["main_frame"]
+    }
+  },
+  {
+    "id": 5,
+    "priority": 1,
+    "action": { "type": "redirect", "redirect": { "extensionPath": "/blocked.html?site=Snapchat" } },
+    "condition": {
+      "urlFilter": "snapchat.com",
+      "resourceTypes": ["main_frame"]
+    }
+  }
+]

@@ -1,0 +1,64 @@
+{
+  "manifest_version": 3,
+  "name": "FocusForge — Study Blocker",
+  "version": "1.0.0",
+  "description": "Block YouTube Shorts, Reels, TikTok & distractions. Allow only approved channels. Pomodoro timer built-in.",
+  "permissions": [
+    "storage",
+    "declarativeNetRequest",
+    "declarativeNetRequestWithHostAccess",
+    "tabs",
+    "scripting",
+    "alarms",
+    "notifications"
+  ],
+  "host_permissions": [
+    "*://*.youtube.com/*",
+    "*://*.instagram.com/*",
+    "*://*.tiktok.com/*",
+    "*://*.twitter.com/*",
+    "*://*.x.com/*",
+    "*://*.reddit.com/*",
+    "*://*.snapchat.com/*",
+    "*://*.twitch.tv/*",
+    "*://*.facebook.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.youtube.com/*"],
+      "js": ["content-youtube.js"],
+      "css": ["content-youtube.css"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["*://*.instagram.com/*"],
+      "js": ["content-instagram.js"],
+      "css": ["content-instagram.css"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["*://*.tiktok.com/*", "*://*.twitter.com/*", "*://*.x.com/*", "*://*.snapchat.com/*"],
+      "js": ["content-block.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "FocusForge"
+  },
+  "icons": {
+    "16": "icons/icon16.svg",
+    "48": "icons/icon48.svg",
+    "128": "icons/icon128.svg"
+  },
+  "declarative_net_request": {
+    "rule_resources": [{
+      "id": "ruleset_1",
+      "enabled": true,
+      "path": "rules.json"
+    }]
+  }
+}
