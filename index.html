@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FocusForge — Study Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --card: #16161f;
+    --border: #2a2a3a;
+    --accent: #f5a623;
+    --accent2: #e8435a;
+    --green: #22c55e;
+    --blue: #3b82f6;
+    --purple: #a855f7;
+    --text: #e8e8f0;
+    --muted: #6b6b7e;
+    --mono: 'Space Mono', monospace;
+    --display: 'Bebas Neue', cursive;
+    --body: 'DM Sans', sans-serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--body);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(245,166,35,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse 40% 40% at 90% 80%, rgba(232,67,90,0.05) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* LAYOUT */
+  .app { position: relative; z-index: 1; }
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 32px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(10,10,15,0.9);
+    backdrop-filter: blur(10px);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .logo { font-family: var(--display); font-size: 28px; letter-spacing: 2px; color: var(--accent); }
+  .logo span { color: var(--text); }
+  .header-status { display: flex; align-items: center; gap: 12px; font-size: 13px; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  nav {
+    display: flex; gap: 0;
+    padding: 0 32px;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+  nav button {
+    background: none; border: none; color: var(--muted);
+    font-family: var(--body); font-size: 13px; font-weight: 500;
+    padding: 14px 20px; cursor: pointer; white-space: nowrap;
+    border-bottom: 2px solid transparent; transition: all .2s;
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  nav button.active { color: var(--accent); border-bottom-color: var(--accent); }
+  nav button:hover { color: var(--text); }
+
+  .main { max-width: 1200px; margin: 0 auto; padding: 28px 32px; }
+
+  /* CARDS */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .card-title {
+    font-family: var(--display); font-size: 18px;
+    letter-spacing: 1.5px; color: var(--accent); margin-bottom: 18px;
+  }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+
+  /* BUTTONS */
+  .btn {
+    border: none; border-radius: 8px; padding: 10px 20px;
+    font-family: var(--body); font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all .2s; display: inline-flex;
+    align-items: center; gap: 8px;
+  }
+  .btn-primary { background: var(--accent); color: #000; }
+  .btn-primary:hover { background: #ffc145; transform: translateY(-1px); }
+  .btn-danger { background: var(--accent2); color: #fff; }
+  .btn-danger:hover { background: #ff5570; }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-green { background: var(--green); color: #000; }
+  .btn-green:hover { background: #4ade80; }
+  .btn-sm { padding: 6px 14px; font-size: 12px; }
+  .btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+  /* TIMER SECTION */
+  .timer-ring-wrap {
+    display: flex; align-items: center; justify-content: center;
+    position: relative; margin: 20px auto;
+  }
+  .timer-ring svg { transform: rotate(-90deg); }
+  .timer-ring circle { transition: stroke-dashoffset 1s linear; }
+  .timer-display {
+    position: absolute; text-align: center;
+  }
+  .timer-time {
+    font-family: var(--mono); font-size: 52px; font-weight: 700;
+    color: var(--text); letter-spacing: -2px; line-height: 1;
+  }
+  .timer-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-top: 6px; }
+  .timer-phase {
+    font-family: var(--display); font-size: 20px; letter-spacing: 2px;
+    color: var(--accent); text-align: center; margin-bottom: 8px;
+  }
+  .timer-controls { display: flex; justify-content: center; gap: 12px; margin-top: 16px; }
+
+  /* STOPWATCH */
+  .sw-display {
+    font-family: var(--mono); font-size: 56px; font-weight: 700;
+    text-align: center; letter-spacing: -2px; color: var(--text);
+    padding: 20px 0;
+  }
+  .sw-ms { font-size: 28px; color: var(--muted); }
+
+  /* POMODORO SETTINGS */
+  .pomo-settings { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 20px; }
+  .pomo-set-item { text-align: center; }
+  .pomo-set-item label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 6px; }
+  .pomo-set-item input {
+    width: 100%; text-align: center; background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); border-radius: 8px; padding: 8px; font-family: var(--mono);
+    font-size: 20px; font-weight: 700;
+  }
+  .pomo-set-item input:focus { outline: none; border-color: var(--accent); }
+
+  /* SESSION PROGRESS */
+  .pomo-dots { display: flex; justify-content: center; gap: 8px; margin: 12px 0; }
+  .pomo-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--border); transition: all .3s; }
+  .pomo-dot.done { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+  .pomo-dot.active { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 1s infinite; }
+
+  /* STRICT MODE TOGGLE */
+  .strict-banner {
+    background: linear-gradient(135deg, rgba(232,67,90,0.15), rgba(232,67,90,0.05));
+    border: 1px solid rgba(232,67,90,0.4);
+    border-radius: 12px; padding: 20px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .strict-banner.active {
+    background: linear-gradient(135deg, rgba(232,67,90,0.25), rgba(232,67,90,0.1));
+    border-color: var(--accent2);
+  }
+  .toggle {
+    width: 52px; height: 28px; background: var(--border);
+    border-radius: 14px; cursor: pointer; position: relative;
+    transition: background .3s; flex-shrink: 0;
+  }
+  .toggle::after {
+    content: ''; position: absolute; top: 3px; left: 3px;
+    width: 22px; height: 22px; background: #fff;
+    border-radius: 50%; transition: transform .3s; box-shadow: 0 2px 4px rgba(0,0,0,.4);
+  }
+  .toggle.on { background: var(--accent2); }
+  .toggle.on::after { transform: translateX(24px); }
+
+  /* BLOCKLIST */
+  .block-list { display: flex; flex-direction: column; gap: 10px; max-height: 280px; overflow-y: auto; }
+  .block-item {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px;
+  }
+  .block-item.blocked { border-left: 3px solid var(--accent2); }
+  .block-item.allowed { border-left: 3px solid var(--green); }
+  .block-item-left { display: flex; align-items: center; gap: 10px; }
+  .block-icon { width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .block-name { font-size: 14px; font-weight: 500; }
+  .block-reason { font-size: 11px; color: var(--muted); }
+  .block-badge {
+    font-size: 10px; font-weight: 700; padding: 3px 8px;
+    border-radius: 4px; text-transform: uppercase; letter-spacing: 1px;
+  }
+  .badge-blocked { background: rgba(232,67,90,.2); color: var(--accent2); }
+  .badge-allowed { background: rgba(34,197,94,.2); color: var(--green); }
+
+  /* ADD CHANNEL INPUT */
+  .add-row { display: flex; gap: 10px; margin-top: 14px; }
+  .input-field {
+    flex: 1; background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); border-radius: 8px; padding: 10px 14px;
+    font-family: var(--body); font-size: 14px;
+  }
+  .input-field:focus { outline: none; border-color: var(--accent); }
+  .input-field::placeholder { color: var(--muted); }
+
+  /* REWARDS */
+  .reward-popup {
+    position: fixed; inset: 0; background: rgba(0,0,0,.85);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000; backdrop-filter: blur(8px);
+    animation: fadeIn .3s ease;
+  }
+  @keyframes fadeIn { from{opacity:0;transform:scale(.95)} to{opacity:1;transform:scale(1)} }
+  .reward-card {
+    background: var(--card); border: 2px solid var(--accent);
+    border-radius: 20px; padding: 48px; text-align: center;
+    max-width: 480px; position: relative; overflow: hidden;
+  }
+  .reward-card::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at top, rgba(245,166,35,0.15), transparent 60%);
+    pointer-events: none;
+  }
+  .reward-emoji { font-size: 72px; margin-bottom: 16px; display: block; animation: bounce 1s infinite; }
+  @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+  .reward-title { font-family: var(--display); font-size: 42px; letter-spacing: 3px; color: var(--accent); margin-bottom: 8px; }
+  .reward-msg { color: var(--muted); font-size: 16px; line-height: 1.6; margin-bottom: 24px; }
+  .reward-badge { display: inline-block; background: rgba(245,166,35,.15); border: 1px solid var(--accent); border-radius: 8px; padding: 8px 20px; font-size: 13px; color: var(--accent); font-weight: 600; margin-bottom: 24px; }
+  .confetti { position: absolute; width: 100%; height: 100%; pointer-events: none; overflow: hidden; }
+
+  /* MOTIVATION */
+  .quote-card {
+    background: linear-gradient(135deg, var(--card), var(--surface));
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
+    border-radius: 12px; padding: 24px;
+    position: relative; overflow: hidden;
+  }
+  .quote-text { font-size: 20px; font-style: italic; line-height: 1.6; color: var(--text); margin-bottom: 16px; }
+  .quote-author { font-family: var(--mono); font-size: 12px; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; }
+  .quote-prev-btn, .quote-next-btn {
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); border-radius: 8px; padding: 8px 16px;
+    cursor: pointer; font-size: 18px; transition: all .2s;
+  }
+  .quote-prev-btn:hover, .quote-next-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* STATS */
+  .stat-box {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px; text-align: center;
+  }
+  .stat-num { font-family: var(--mono); font-size: 32px; font-weight: 700; color: var(--accent); }
+  .stat-lbl { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+
+  /* NOTIFICATION TOAST */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px;
+    background: var(--card); border: 1px solid var(--accent);
+    border-radius: 10px; padding: 14px 20px;
+    font-size: 14px; color: var(--text); z-index: 999;
+    transform: translateY(80px); opacity: 0;
+    transition: all .3s ease; max-width: 320px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.error { border-color: var(--accent2); }
+
+  /* TABS */
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* LONG FORM SESSION */
+  .lf-goal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .lf-goal-text { font-size: 14px; }
+  .lf-progress { height: 4px; background: var(--border); border-radius: 2px; margin-top: 6px; }
+  .lf-progress-bar { height: 100%; background: var(--green); border-radius: 2px; transition: width .5s; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--surface); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+  /* SECTION HEADER */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .section-title { font-family: var(--display); font-size: 22px; letter-spacing: 2px; }
+
+  /* LONG FORM */
+  .lf-time-big {
+    font-family: var(--mono); font-size: 80px; font-weight: 700;
+    text-align: center; letter-spacing: -4px; color: var(--text);
+    line-height: 1; padding: 10px 0;
+  }
+  .lf-time-big span { color: var(--accent); }
+
+  /* STRICT WARNING */
+  .strict-warning {
+    display: none; background: rgba(232,67,90,.1); border: 1px solid rgba(232,67,90,.3);
+    border-radius: 8px; padding: 10px 14px; font-size: 13px; color: var(--accent2);
+    margin-top: 10px; align-items: center; gap: 8px;
+  }
+  .strict-warning.show { display: flex; }
+
+  /* CHANNEL TAG */
+  .channel-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(34,197,94,.1); border: 1px solid rgba(34,197,94,.3);
+    border-radius: 6px; padding: 5px 10px; font-size: 12px; color: var(--green);
+    margin: 4px;
+  }
+  .channel-tag button { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 0; line-height: 1; }
+  .channel-tag button:hover { color: var(--accent2); }
+
+  .info-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(59,130,246,.1); border: 1px solid rgba(59,130,246,.25);
+    border-radius: 6px; padding: 6px 12px; font-size: 12px; color: #93c5fd;
+  }
+
+  @media(max-width:768px) {
+    .main { padding: 20px 16px; }
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    nav { padding: 0 16px; }
+    header { padding: 14px 16px; }
+    .timer-time { font-size: 40px; }
+    .lf-time-big { font-size: 56px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- HEADER -->
+<header>
+  <div class="logo">Focus<span>Forge</span></div>
+  <div class="header-status">
+    <div class="status-dot" id="headerDot"></div>
+    <span id="headerStatus">Ready to Focus</span>
+    <div class="info-pill" id="strictBadge" style="display:none">🔒 STRICT MODE ON</div>
+  </div>
+</header>
+
+<!-- NAV -->
+<nav>
+  <button class="active" onclick="switchTab('timer')">⏱ Timer</button>
+  <button onclick="switchTab('stopwatch')">⏲ Stopwatch</button>
+  <button onclick="switchTab('longform')">📚 Long Session</button>
+  <button onclick="switchTab('blocker')">🛡 Blocker</button>
+  <button onclick="switchTab('channels')">📺 Channels</button>
+  <button onclick="switchTab('motivation')">🔥 Motivation</button>
+  <button onclick="switchTab('stats')">📊 Stats</button>
+</nav>
+
+<div class="main">
+
+<!-- ═══════════ TAB: TIMER (Pomodoro) ═══════════ -->
+<div class="tab-content active" id="tab-timer">
+
+  <!-- Strict Mode Banner -->
+  <div class="strict-banner" id="strictBanner">
+    <div>
+      <div style="font-family:var(--display);font-size:18px;letter-spacing:1px;margin-bottom:4px;">🔒 STRICT MODE</div>
+      <div style="font-size:13px;color:var(--muted);">Blocks all distractions, short-form video, 18+ content & social media during sessions</div>
+    </div>
+    <div class="toggle" id="strictToggle" onclick="toggleStrict()"></div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Pomodoro Timer -->
+    <div class="card">
+      <div class="card-title">POMODORO TIMER</div>
+
+      <div class="pomo-settings">
+        <div class="pomo-set-item">
+          <label>Focus (min)</label>
+          <input type="number" id="focusMin" value="25" min="1" max="90" onchange="resetPomodoro()">
+        </div>
+        <div class="pomo-set-item">
+          <label>Short Break</label>
+          <input type="number" id="shortBreak" value="5" min="1" max="30" onchange="resetPomodoro()">
+        </div>
+        <div class="pomo-set-item">
+          <label>Long Break</label>
+          <input type="number" id="longBreak" value="15" min="5" max="60" onchange="resetPomodoro()">
+        </div>
+      </div>
+
+      <div class="timer-phase" id="pomoPhase">FOCUS SESSION</div>
+      <div class="pomo-dots" id="pomoDots"></div>
+
+      <div class="timer-ring-wrap">
+        <svg width="200" height="200">
+          <circle cx="100" cy="100" r="88" fill="none" stroke="#2a2a3a" stroke-width="8"/>
+          <circle id="pomoArc" cx="100" cy="100" r="88" fill="none" stroke="#f5a623" stroke-width="8"
+            stroke-linecap="round" stroke-dasharray="552.9" stroke-dashoffset="0"/>
+        </svg>
+        <div class="timer-display">
+          <div class="timer-time" id="pomoTime">25:00</div>
+          <div class="timer-label" id="pomoSessions">Session 1 of 4</div>
+        </div>
+      </div>
+
+      <div class="timer-controls">
+        <button class="btn btn-ghost" onclick="resetPomodoro()">↺ Reset</button>
+        <button class="btn btn-primary" id="pomoBtnStart" onclick="togglePomodoro()">▶ Start</button>
+        <button class="btn btn-ghost" onclick="skipPomodoro()">⏭ Skip</button>
+      </div>
+    </div>
+
+    <!-- Today's Schedule -->
+    <div class="card">
+      <div class="card-title">SESSION PLANNER</div>
+      <div style="margin-bottom:16px;">
+        <label style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:8px;">Today's Subject</label>
+        <input class="input-field" id="subjectInput" placeholder="e.g. Mathematics — Chapter 5" style="width:100%;margin-bottom:10px;">
+        <label style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:8px;">Target Pomodoros</label>
+        <input class="input-field" type="number" id="targetPomos" value="4" min="1" max="20" style="width:100%;">
+      </div>
+      <div id="sessionGoals" style="margin-bottom:16px;"></div>
+      <button class="btn btn-green" style="width:100%" onclick="addGoal()">+ Add Goal</button>
+
+      <div class="strict-warning show" id="strictWarnTimer">
+        <span>🔒</span>
+        <span>Strict mode will prevent closing this app during active sessions</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ TAB: STOPWATCH ═══════════ -->
+<div class="tab-content" id="tab-stopwatch">
+  <div class="card" style="max-width:500px;margin:0 auto;text-align:center;">
+    <div class="card-title" style="text-align:center;">STOPWATCH</div>
+    <div class="sw-display">
+      <span id="swH">00</span>:<span id="swM">00</span>:<span id="swS">00</span><span class="sw-ms">.<span id="swMs">00</span></span>
+    </div>
+    <div style="display:flex;justify-content:center;gap:12px;margin-top:16px;margin-bottom:20px;">
+      <button class="btn btn-ghost" onclick="swReset()">↺ Reset</button>
+      <button class="btn btn-primary" id="swBtn" onclick="swToggle()">▶ Start</button>
+      <button class="btn btn-ghost" onclick="swLap()">🏁 Lap</button>
+    </div>
+    <div id="swLaps" style="max-height:200px;overflow-y:auto;"></div>
+  </div>
+</div>
+
+<!-- ═══════════ TAB: LONG FORM ═══════════ -->
+<div class="tab-content" id="tab-longform">
+  <div class="grid-2" style="align-items:start;">
+    <div class="card">
+      <div class="card-title">LONG FORM SESSION</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:20px;">For deep work sessions — 1 to 8 hours of uninterrupted study</p>
+
+      <div style="margin-bottom:16px;">
+        <label style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:8px;">Session Duration (hours)</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-ghost btn-sm lf-dur-btn" onclick="setLfDur(1)">1h</button>
+          <button class="btn btn-ghost btn-sm lf-dur-btn" onclick="setLfDur(2)">2h</button>
+          <button class="btn btn-ghost btn-sm lf-dur-btn" onclick="setLfDur(3)">3h</button>
+          <button class="btn btn-ghost btn-sm lf-dur-btn" onclick="setLfDur(4)">4h</button>
+          <button class="btn btn-ghost btn-sm lf-dur-btn" onclick="setLfDur(6)">6h</button>
+          <button class="btn btn-ghost btn-sm lf-dur-btn" onclick="setLfDur(8)">8h</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <input class="input-field" type="number" id="lfCustomHr" placeholder="Custom hours" min="0.5" max="12" step="0.5" style="flex:1">
+          <button class="btn btn-ghost" onclick="setLfDurCustom()">Set</button>
+        </div>
+      </div>
+
+      <div id="lfSessionName" style="margin-bottom:16px;">
+        <label style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:8px;">Session Name</label>
+        <input class="input-field" id="lfNameInput" placeholder="e.g. JEE Mains — Physics" style="width:100%">
+      </div>
+
+      <div class="lf-time-big"><span id="lfH">02</span>:<span id="lfM">00</span>:<span id="lfS">00</span></div>
+
+      <div style="background:var(--surface);border-radius:8px;height:8px;margin:16px 0;overflow:hidden;">
+        <div id="lfBar" style="height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0%;border-radius:8px;transition:width .5s;"></div>
+      </div>
+      <div style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:16px;" id="lfPercent">0% complete</div>
+
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-ghost" style="flex:1" onclick="lfReset()">↺ Reset</button>
+        <button class="btn btn-primary" style="flex:2" id="lfBtn" onclick="lfToggle()">▶ Start Session</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title">MILESTONE REWARDS</div>
+        <div id="lfMilestones"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">DEEP WORK TIPS</div>
+        <div style="font-size:13px;color:var(--muted);line-height:1.8;">
+          <p>🎧 Use noise-cancelling headphones or lo-fi music</p>
+          <p style="margin-top:8px">📵 Phone in another room — not just silent</p>
+          <p style="margin-top:8px">💧 Keep water nearby. No phone for breaks.</p>
+          <p style="margin-top:8px">📝 Write your ONE goal before starting</p>
+          <p style="margin-top:8px">🌡 Keep room slightly cool (18–21°C)</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ TAB: BLOCKER ═══════════ -->
+<div class="tab-content" id="tab-blocker">
+  <div class="grid-2" style="align-items:start;">
+    <div>
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title">🚫 BLOCKED BY DEFAULT</div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">These are always blocked during study sessions. Strict Mode enforces this.</p>
+        <div class="block-list" id="defaultBlockList"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">+ ADD CUSTOM BLOCK</div>
+        <div class="add-row">
+          <input class="input-field" id="customBlockInput" placeholder="e.g. reddit.com or tiktok.com">
+          <button class="btn btn-danger" onclick="addCustomBlock()">Block</button>
+        </div>
+        <div id="customBlockList" style="margin-top:14px;"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🔒 STRICT MODE CONTROLS</div>
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div class="block-item">
+          <div class="block-item-left">
+            <div class="block-icon" style="background:rgba(232,67,90,.15);">📱</div>
+            <div>
+              <div class="block-name">Short-form Video</div>
+              <div class="block-reason">YT Shorts, Reels, TikTok, Moj</div>
+            </div>
+          </div>
+          <div class="toggle on"></div>
+        </div>
+        <div class="block-item">
+          <div class="block-item-left">
+            <div class="block-icon" style="background:rgba(232,67,90,.15);">🔞</div>
+            <div>
+              <div class="block-name">18+ Content</div>
+              <div class="block-reason">Adult websites & restricted YouTube</div>
+            </div>
+          </div>
+          <div class="toggle on"></div>
+        </div>
+        <div class="block-item">
+          <div class="block-item-left">
+            <div class="block-icon" style="background:rgba(232,67,90,.15);">💬</div>
+            <div>
+              <div class="block-name">Social Media</div>
+              <div class="block-reason">Instagram, Twitter/X, Snapchat</div>
+            </div>
+          </div>
+          <div class="toggle on"></div>
+        </div>
+        <div class="block-item">
+          <div class="block-item-left">
+            <div class="block-icon" style="background:rgba(232,67,90,.15);">🎮</div>
+            <div>
+              <div class="block-name">Gaming Sites</div>
+              <div class="block-reason">Steam, Twitch, gaming portals</div>
+            </div>
+          </div>
+          <div class="toggle on"></div>
+        </div>
+        <div class="block-item">
+          <div class="block-item-left">
+            <div class="block-icon" style="background:rgba(34,197,94,.15);">📺</div>
+            <div>
+              <div class="block-name">YouTube (Whitelisted Only)</div>
+              <div class="block-reason">Only your approved channels allowed</div>
+            </div>
+          </div>
+          <div class="toggle on"></div>
+        </div>
+        <div class="block-item">
+          <div class="block-item-left">
+            <div class="block-icon" style="background:rgba(245,166,35,.15);">🗑</div>
+            <div>
+              <div class="block-name">Anti-Uninstall Lock</div>
+              <div class="block-reason">Hides uninstall option during sessions</div>
+            </div>
+          </div>
+          <div class="toggle on"></div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;padding:14px;background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.2);border-radius:8px;font-size:12px;color:var(--muted);line-height:1.7;">
+        <strong style="color:var(--accent);">ℹ️ Browser Extension Required</strong><br>
+        For full blocking to work in your browser, install the FocusForge Chrome/Firefox extension. This dashboard syncs with the extension to enforce all rules in real-time.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ TAB: CHANNELS ═══════════ -->
+<div class="tab-content" id="tab-channels">
+  <div class="grid-2" style="align-items:start;">
+    <div class="card">
+      <div class="card-title">✅ ALLOWED YOUTUBE CHANNELS</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;">Only these channels can be watched during study sessions. All other YouTube content is blocked.</p>
+      <div id="allowedChannels" style="margin-bottom:14px;"></div>
+      <div class="add-row">
+        <input class="input-field" id="channelInput" placeholder="Channel name e.g. 3Blue1Brown">
+        <button class="btn btn-green" onclick="addChannel()">+ Allow</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🎓 STUDY MODE — YOUTUBE</div>
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div style="background:var(--surface);border-radius:8px;padding:14px;">
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px;">Blocks in Study Mode:</div>
+          <div style="font-size:13px;color:var(--muted);line-height:2;">
+            ✗ YouTube Shorts feed<br>
+            ✗ Recommended / autoplay<br>
+            ✗18+ / age-restricted content<br>
+            ✗ Comments section<br>
+            ✗ Non-whitelisted channels<br>
+            ✗ Live streams (except educational)
+          </div>
+        </div>
+        <div style="background:var(--surface);border-radius:8px;padding:14px;">
+          <div style="font-size:13px;font-weight:600;margin-bottom:6px;">Allowed in Study Mode:</div>
+          <div style="font-size:13px;color:var(--green);line-height:2;">
+            ✓ Whitelisted channel videos<br>
+            ✓ Search (educational only)<br>
+            ✓ Playlists from allowed channels<br>
+            ✓ Video playback only
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ TAB: MOTIVATION ═══════════ -->
+<div class="tab-content" id="tab-motivation">
+  <div style="max-width:680px;margin:0 auto;">
+    <div class="quote-card" style="margin-bottom:24px;">
+      <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:2px;margin-bottom:16px;" id="quoteDate"></div>
+      <div class="quote-text" id="quoteText"></div>
+      <div class="quote-author" id="quoteAuthor"></div>
+      <div style="display:flex;gap:10px;margin-top:20px;">
+        <button class="quote-prev-btn" onclick="prevQuote()">←</button>
+        <button class="btn btn-ghost" style="flex:1" onclick="randomQuote()">🎲 Random Quote</button>
+        <button class="quote-next-btn" onclick="nextQuote()">→</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-title">HALL OF DISCIPLINE</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;" id="successPeople"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">YOUR STREAK</div>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <div style="font-family:var(--display);font-size:72px;color:var(--accent);line-height:1;" id="streakNum">0</div>
+        <div>
+          <div style="font-size:18px;font-weight:600;">day streak 🔥</div>
+          <div style="font-size:13px;color:var(--muted);margin-top:4px;">Keep going. Every session counts.</div>
+          <button class="btn btn-ghost btn-sm" style="margin-top:10px;" onclick="claimStreak()">✓ Mark Today Complete</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ TAB: STATS ═══════════ -->
+<div class="tab-content" id="tab-stats">
+  <div class="grid-3" style="margin-bottom:20px;">
+    <div class="stat-box">
+      <div class="stat-num" id="statPomos">0</div>
+      <div class="stat-lbl">Pomodoros Today</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num" id="statFocusTime">0h 0m</div>
+      <div class="stat-lbl">Focus Time Today</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-num" id="statStreak">0</div>
+      <div class="stat-lbl">Day Streak</div>
+    </div>
+  </div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">SESSION HISTORY</div>
+      <div id="sessionHistory" style="max-height:300px;overflow-y:auto;font-size:13px;color:var(--muted);">
+        No sessions yet. Start your first session! 🚀
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">ACHIEVEMENTS</div>
+      <div id="achievements" style="display:flex;flex-direction:column;gap:10px;"></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- .main -->
+</div><!-- .app -->
+
+<!-- REWARD POPUP -->
+<div class="reward-popup" id="rewardPopup" style="display:none;">
+  <div class="reward-card">
+    <span class="reward-emoji" id="rewardEmoji">🏆</span>
+    <div class="reward-title" id="rewardTitle">SESSION COMPLETE!</div>
+    <div class="reward-msg" id="rewardMsg">You crushed it. Take a well-earned break.</div>
+    <div class="reward-badge" id="rewardBadge">+25 XP Earned</div>
+    <div id="rewardQuote" style="font-size:13px;color:var(--muted);font-style:italic;margin-bottom:20px;"></div>
+    <button class="btn btn-primary" onclick="closeReward()">Continue →</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span id="toastIcon">✓</span>
+  <span id="toastMsg">Done!</span>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+const state = {
+  // Pomodoro
+  pomoRunning: false,
+  pomoInterval: null,
+  pomoPhase: 'focus', // 'focus','short','long'
+  pomoSession: 1,
+  pomoTotalSessions: 4,
+  pomoSecsLeft: 0,
+  pomoTotalSecs: 0,
+  pomoCycleCount: 0,
+  // Stopwatch
+  swRunning: false,
+  swInterval: null,
+  swMs: 0,
+  swLaps: [],
+  // Long form
+  lfRunning: false,
+  lfInterval: null,
+  lfDurSecs: 7200,
+  lfSecsElapsed: 0,
+  lfMilestones: [25, 50, 75, 100],
+  lfMilestonesHit: [],
+  // Blocker
+  customBlocks: [],
+  allowedChannels: [],
+  // Stats
+  totalPomos: 0,
+  totalFocusSecs: 0,
+  streak: 0,
+  sessions: [],
+  // XP
+  xp: 0,
+  // Strict
+  strictMode: false,
+  // Goals
+  goals: [],
+};
+
+// ═══════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════
+function init() {
+  loadFromStorage();
+  renderDefaultBlockList();
+  renderCustomBlocks();
+  renderAllowedChannels();
+  renderGoals();
+  renderMilestones();
+  renderAchievements();
+  renderSuccessPeople();
+  renderSessionHistory();
+  updateStats();
+  buildPomoDots();
+  setPomoTime();
+  updateStreakDisplay();
+  document.getElementById('quoteDate').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
+  showQuote(currentQuoteIndex);
+}
+
+// ═══════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  const btns = document.querySelectorAll('nav button');
+  const names = ['timer','stopwatch','longform','blocker','channels','motivation','stats'];
+  btns[names.indexOf(name)].classList.add('active');
+}
+
+// ═══════════════════════════════════════
+// POMODORO
+// ═══════════════════════════════════════
+function setPomoTime() {
+  const focusMins = parseInt(document.getElementById('focusMin').value)||25;
+  const shortMins = parseInt(document.getElementById('shortBreak').value)||5;
+  const longMins = parseInt(document.getElementById('longBreak').value)||15;
+
+  let secs;
+  if (state.pomoPhase==='focus') secs = focusMins*60;
+  else if (state.pomoPhase==='short') secs = shortMins*60;
+  else secs = longMins*60;
+
+  state.pomoSecsLeft = secs;
+  state.pomoTotalSecs = secs;
+  updatePomoDisplay();
+}
+
+function buildPomoDots() {
+  const dots = document.getElementById('pomoDots');
+  dots.innerHTML = '';
+  for(let i=1;i<=4;i++){
+    const d = document.createElement('div');
+    d.className = 'pomo-dot' + (i<state.pomoSession?' done':i===state.pomoSession?' active':'');
+    dots.appendChild(d);
+  }
+}
+
+function updatePomoDisplay() {
+  const m = Math.floor(state.pomoSecsLeft/60);
+  const s = state.pomoSecsLeft%60;
+  document.getElementById('pomoTime').textContent = pad(m)+':'+pad(s);
+  const arc = document.getElementById('pomoArc');
+  const total = 2*Math.PI*88;
+  const progress = 1 - (state.pomoSecsLeft/state.pomoTotalSecs);
+  arc.style.strokeDashoffset = total*(1-progress);
+
+  // Phase label
+  const phaseLabels = {focus:'🧠 FOCUS SESSION',short:'☕ SHORT BREAK',long:'🛌 LONG BREAK'};
+  document.getElementById('pomoPhase').textContent = phaseLabels[state.pomoPhase];
+  document.getElementById('pomoSessions').textContent = `Session ${state.pomoSession} of 4`;
+
+  // Arc color
+  const colors = {focus:'#f5a623',short:'#22c55e',long:'#3b82f6'};
+  arc.style.stroke = colors[state.pomoPhase];
+}
+
+function togglePomodoro() {
+  if(state.pomoRunning) pausePomodoro();
+  else startPomodoro();
+}
+
+function startPomodoro() {
+  if(state.pomoSecsLeft===0) setPomoTime();
+  state.pomoRunning = true;
+  document.getElementById('pomoBtnStart').textContent = '⏸ Pause';
+  document.getElementById('headerStatus').textContent = 'Focus Session Active';
+  document.getElementById('headerDot').style.background = '#f5a623';
+  document.getElementById('headerDot').style.boxShadow = '0 0 8px #f5a623';
+
+  state.pomoInterval = setInterval(()=>{
+    if(state.pomoPhase==='focus') state.totalFocusSecs++;
+    state.pomoSecsLeft--;
+    if(state.pomoSecsLeft<0) {
+      clearInterval(state.pomoInterval);
+      state.pomoRunning = false;
+      pomoPhaseEnd();
+    } else {
+      updatePomoDisplay();
+    }
+  },1000);
+}
+
+function pausePomodoro() {
+  state.pomoRunning = false;
+  clearInterval(state.pomoInterval);
+  document.getElementById('pomoBtnStart').textContent = '▶ Resume';
+}
+
+function resetPomodoro() {
+  clearInterval(state.pomoInterval);
+  state.pomoRunning = false;
+  state.pomoPhase = 'focus';
+  state.pomoSession = 1;
+  document.getElementById('pomoBtnStart').textContent = '▶ Start';
+  setPomoTime();
+  buildPomoDots();
+}
+
+function pomoPhaseEnd() {
+  if(state.pomoPhase==='focus') {
+    state.totalPomos++;
+    state.pomoCycleCount++;
+    saveToStorage();
+    updateStats();
+    state.sessions.push({type:'Pomodoro',time:new Date().toLocaleTimeString(),subject:document.getElementById('subjectInput').value||'Study'});
+
+    if(state.pomoCycleCount%4===0) {
+      state.pomoPhase = 'long';
+      showReward('long',state.pomoCycleCount);
+    } else {
+      state.pomoPhase = 'short';
+      showReward('short',state.pomoCycleCount);
+    }
+    state.pomoSession = Math.min(state.pomoSession+1,4);
+  } else {
+    state.pomoPhase = 'focus';
+    if(state.pomoSession>4) state.pomoSession=1;
+  }
+  buildPomoDots();
+  setPomoTime();
+  renderSessionHistory();
+  document.getElementById('pomoBtnStart').textContent = '▶ Start';
+}
+
+function skipPomodoro() {
+  clearInterval(state.pomoInterval);
+  state.pomoRunning = false;
+  pomoPhaseEnd();
+}
+
+// ═══════════════════════════════════════
+// STOPWATCH
+// ═══════════════════════════════════════
+function swToggle() {
+  if(state.swRunning) {
+    clearInterval(state.swInterval);
+    state.swRunning = false;
+    document.getElementById('swBtn').textContent = '▶ Resume';
+  } else {
+    state.swRunning = true;
+    document.getElementById('swBtn').textContent = '⏸ Pause';
+    state.swInterval = setInterval(()=>{
+      state.swMs += 10;
+      updateSwDisplay();
+    },10);
+  }
+}
+
+function swReset() {
+  clearInterval(state.swInterval);
+  state.swRunning = false;
+  state.swMs = 0;
+  state.swLaps = [];
+  document.getElementById('swBtn').textContent = '▶ Start';
+  updateSwDisplay();
+  document.getElementById('swLaps').innerHTML = '';
+}
+
+function swLap() {
+  if(!state.swRunning) return;
+  state.swLaps.push(state.swMs);
+  const laps = document.getElementById('swLaps');
+  const lapTime = msToHMS(state.swMs);
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;justify-content:space-between;padding:8px 12px;background:var(--surface);border-radius:6px;margin-bottom:6px;font-family:var(--mono);font-size:13px;';
+  div.innerHTML = `<span style="color:var(--muted)">Lap ${state.swLaps.length}</span><span style="color:var(--accent)">${lapTime}</span>`;
+  laps.insertBefore(div, laps.firstChild);
+}
+
+function updateSwDisplay() {
+  const total = state.swMs;
+  const h = Math.floor(total/3600000);
+  const m = Math.floor((total%3600000)/60000);
+  const s = Math.floor((total%60000)/1000);
+  const ms = Math.floor((total%1000)/10);
+  document.getElementById('swH').textContent = pad(h);
+  document.getElementById('swM').textContent = pad(m);
+  document.getElementById('swS').textContent = pad(s);
+  document.getElementById('swMs').textContent = pad(ms);
+}
+
+function msToHMS(ms) {
+  const h=Math.floor(ms/3600000),m=Math.floor((ms%3600000)/60000),s=Math.floor((ms%60000)/1000);
+  return `${pad(h)}:${pad(m)}:${pad(s)}`;
+}
+
+// ═══════════════════════════════════════
+// LONG FORM SESSION
+// ═══════════════════════════════════════
+function setLfDur(hours) {
+  state.lfDurSecs = hours*3600;
+  document.querySelectorAll('.lf-dur-btn').forEach(b=>b.classList.remove('btn-primary'));
+  event.target.classList.add('btn-primary');
+  event.target.classList.remove('btn-ghost');
+  lfUpdateDisplay();
+}
+
+function setLfDurCustom() {
+  const val = parseFloat(document.getElementById('lfCustomHr').value)||2;
+  state.lfDurSecs = val*3600;
+  lfUpdateDisplay();
+  showToast(`Duration set to ${val}h`);
+}
+
+function lfToggle() {
+  if(state.lfRunning) {
+    clearInterval(state.lfInterval);
+    state.lfRunning = false;
+    document.getElementById('lfBtn').textContent = '▶ Resume Session';
+  } else {
+    state.lfRunning = true;
+    document.getElementById('lfBtn').textContent = '⏸ Pause';
+    state.lfInterval = setInterval(()=>{
+      state.lfSecsElapsed++;
+      state.totalFocusSecs++;
+      lfUpdateDisplay();
+      checkLfMilestones();
+      if(state.lfSecsElapsed>=state.lfDurSecs) {
+        clearInterval(state.lfInterval);
+        state.lfRunning = false;
+        document.getElementById('lfBtn').textContent = '✓ Complete!';
+        document.getElementById('lfBtn').disabled = true;
+        showReward('longform',0);
+        state.sessions.push({type:'Long Session',time:new Date().toLocaleTimeString(),subject:document.getElementById('lfNameInput').value||'Deep Work'});
+        renderSessionHistory();
+      }
+    },1000);
+  }
+}
+
+function lfReset() {
+  clearInterval(state.lfInterval);
+  state.lfRunning = false;
+  state.lfSecsElapsed = 0;
+  state.lfMilestonesHit = [];
+  document.getElementById('lfBtn').textContent = '▶ Start Session';
+  document.getElementById('lfBtn').disabled = false;
+  lfUpdateDisplay();
+  renderMilestones();
+}
+
+function lfUpdateDisplay() {
+  const remaining = Math.max(0, state.lfDurSecs - state.lfSecsElapsed);
+  const h = Math.floor(remaining/3600);
+  const m = Math.floor((remaining%3600)/60);
+  const s = remaining%60;
+  document.getElementById('lfH').textContent = pad(h);
+  document.getElementById('lfM').textContent = pad(m);
+  document.getElementById('lfS').textContent = pad(s);
+  const pct = Math.min(100,Math.floor((state.lfSecsElapsed/state.lfDurSecs)*100));
+  document.getElementById('lfBar').style.width = pct+'%';
+  document.getElementById('lfPercent').textContent = pct+'% complete';
+}
+
+function checkLfMilestones() {
+  const pct = Math.floor((state.lfSecsElapsed/state.lfDurSecs)*100);
+  [25,50,75,100].forEach(m=>{
+    if(pct>=m && !state.lfMilestonesHit.includes(m)) {
+      state.lfMilestonesHit.push(m);
+      renderMilestones();
+      if(m<100) showToast(`🎉 ${m}% milestone reached!`);
+    }
+  });
+}
+
+function renderMilestones() {
+  const el = document.getElementById('lfMilestones');
+  const items = [
+    {pct:25,label:'25% Done',emoji:'⭐',reward:'+10 XP'},
+    {pct:50,label:'Halfway!',emoji:'🌟',reward:'+25 XP'},
+    {pct:75,label:'Almost There',emoji:'💫',reward:'+40 XP'},
+    {pct:100,label:'Mission Complete',emoji:'🏆',reward:'+100 XP'},
+  ];
+  el.innerHTML = items.map(i=>{
+    const hit = state.lfMilestonesHit.includes(i.pct);
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:${hit?'rgba(245,166,35,.1)':'var(--surface)'};border:1px solid ${hit?'rgba(245,166,35,.3)':'var(--border)'};border-radius:8px;margin-bottom:8px;opacity:${hit?1:.5}">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:20px">${i.emoji}</span>
+        <div>
+          <div style="font-size:13px;font-weight:600">${i.label}</div>
+          <div style="font-size:11px;color:var(--muted)">${i.pct}% of session</div>
+        </div>
+      </div>
+      <div style="font-size:12px;color:${hit?'var(--accent)':'var(--muted)'};font-weight:600">${hit?'✓ Earned':i.reward}</div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════
+// BLOCKER
+// ═══════════════════════════════════════
+const defaultBlocks = [
+  {icon:'🎵',name:'TikTok',reason:'Short-form video — always blocked',color:'rgba(232,67,90,.15)'},
+  {icon:'📸',name:'Instagram Reels',reason:'Short-form video feed',color:'rgba(232,67,90,.15)'},
+  {icon:'▶️',name:'YouTube Shorts',reason:'Shorts feed & /shorts URLs',color:'rgba(232,67,90,.15)'},
+  {icon:'👻',name:'Snapchat',reason:'Social media distraction',color:'rgba(232,67,90,.15)'},
+  {icon:'🐦',name:'Twitter / X',reason:'Infinite scroll social feed',color:'rgba(232,67,90,.15)'},
+  {icon:'🎮',name:'Twitch',reason:'Live streaming / gaming',color:'rgba(232,67,90,.15)'},
+  {icon:'📌',name:'Pinterest',reason:'Visual browsing distraction',color:'rgba(232,67,90,.15)'},
+  {icon:'🎮',name:'Steam Store',reason:'Gaming platform',color:'rgba(232,67,90,.15)'},
+];
+
+function renderDefaultBlockList() {
+  document.getElementById('defaultBlockList').innerHTML = defaultBlocks.map(b=>`
+    <div class="block-item blocked">
+      <div class="block-item-left">
+        <div class="block-icon" style="background:${b.color}">${b.icon}</div>
+        <div>
+          <div class="block-name">${b.name}</div>
+          <div class="block-reason">${b.reason}</div>
+        </div>
+      </div>
+      <span class="block-badge badge-blocked">BLOCKED</span>
+    </div>
+  `).join('');
+}
+
+function addCustomBlock() {
+  const val = document.getElementById('customBlockInput').value.trim();
+  if(!val) return;
+  state.customBlocks.push(val);
+  document.getElementById('customBlockInput').value='';
+  renderCustomBlocks();
+  saveToStorage();
+  showToast(`🚫 ${val} blocked`);
+}
+
+function renderCustomBlocks() {
+  const el = document.getElementById('customBlockList');
+  if(!state.customBlocks.length){el.innerHTML='';return;}
+  el.innerHTML = state.customBlocks.map((b,i)=>`
+    <div class="block-item blocked" style="margin-bottom:6px">
+      <div class="block-item-left">
+        <div class="block-icon" style="background:rgba(232,67,90,.15)">🌐</div>
+        <div class="block-name">${b}</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="removeBlock(${i})">✕ Remove</button>
+    </div>
+  `).join('');
+}
+
+function removeBlock(i) {
+  state.customBlocks.splice(i,1);
+  renderCustomBlocks();
+  saveToStorage();
+}
+
+// ═══════════════════════════════════════
+// CHANNELS
+// ═══════════════════════════════════════
+const defaultChannels = ['Khan Academy','MIT OpenCourseWare','3Blue1Brown','CrashCourse','Kurzgesagt','TED-Ed','Physics Wallah','Unacademy'];
+
+function addChannel() {
+  const val = document.getElementById('channelInput').value.trim();
+  if(!val) return;
+  if(!state.allowedChannels.includes(val)) {
+    state.allowedChannels.push(val);
+    document.getElementById('channelInput').value='';
+    renderAllowedChannels();
+    saveToStorage();
+    showToast(`✅ ${val} allowed`);
+  }
+}
+
+function removeChannel(name) {
+  state.allowedChannels = state.allowedChannels.filter(c=>c!==name);
+  renderAllowedChannels();
+  saveToStorage();
+}
+
+function renderAllowedChannels() {
+  const el = document.getElementById('allowedChannels');
+  el.innerHTML = state.allowedChannels.map(c=>`
+    <span class="channel-tag">📺 ${c} <button onclick="removeChannel('${c.replace(/'/g,"\\'")}')">✕</button></span>
+  `).join('');
+}
+
+// ═══════════════════════════════════════
+// STRICT MODE
+// ═══════════════════════════════════════
+function toggleStrict() {
+  state.strictMode = !state.strictMode;
+  const toggle = document.getElementById('strictToggle');
+  const banner = document.getElementById('strictBanner');
+  const badge = document.getElementById('strictBadge');
+  toggle.classList.toggle('on', state.strictMode);
+  banner.classList.toggle('active', state.strictMode);
+  badge.style.display = state.strictMode ? 'inline-flex' : 'none';
+  saveToStorage();
+  showToast(state.strictMode ? '🔒 Strict Mode Activated' : '🔓 Strict Mode Disabled', state.strictMode?'':'error');
+}
+
+// ═══════════════════════════════════════
+// REWARDS
+// ═══════════════════════════════════════
+const rewardData = {
+  short: {
+    emoji:'☕', title:'BREAK TIME!',
+    msgs:['Take a 5 min walk. Hydrate. You earned it.','Step away from the screen. Breathe deeply.','Rest your eyes. Look out a window. Good work.'],
+    badge:'+15 XP — Focus Block Done'
+  },
+  long: {
+    emoji:'🎯', title:'LONG BREAK!',
+    msgs:['4 Pomodoros complete. Outstanding discipline!','You just did what most people can\'t. Rest up.','A full cycle done. Your brain needs this break.'],
+    badge:'+50 XP — Full Cycle Complete'
+  },
+  longform: {
+    emoji:'🏆', title:'DEEP WORK DONE!',
+    msgs:['You completed an entire long-form session. Incredible.','Hours of deep work. This is what separates legends.','Your future self thanks you for this.'],
+    badge:'+150 XP — Deep Work Champion'
+  }
+};
+
+function showReward(type, count) {
+  const r = rewardData[type];
+  document.getElementById('rewardEmoji').textContent = r.emoji;
+  document.getElementById('rewardTitle').textContent = r.title;
+  document.getElementById('rewardMsg').textContent = r.msgs[count%r.msgs.length] || r.msgs[0];
+  document.getElementById('rewardBadge').textContent = r.badge;
+  const q = quotes[Math.floor(Math.random()*quotes.length)];
+  document.getElementById('rewardQuote').textContent = `"${q.text}" — ${q.author}`;
+  document.getElementById('rewardPopup').style.display = 'flex';
+  spawnConfetti();
+}
+
+function closeReward() {
+  document.getElementById('rewardPopup').style.display = 'none';
+}
+
+function spawnConfetti() {
+  const popup = document.querySelector('.reward-card');
+  for(let i=0;i<30;i++) {
+    const el = document.createElement('div');
+    const colors = ['#f5a623','#e8435a','#22c55e','#3b82f6','#a855f7'];
+    el.style.cssText = `position:absolute;width:8px;height:8px;background:${colors[i%5]};border-radius:2px;top:${Math.random()*100}%;left:${Math.random()*100}%;animation:confettiDrop ${.5+Math.random()}s ease-out forwards;opacity:0;transform:translateY(-50px);`;
+    popup.appendChild(el);
+    setTimeout(()=>el.remove(),1500);
+  }
+}
+const confettiStyle = document.createElement('style');
+confettiStyle.textContent = '@keyframes confettiDrop{0%{opacity:1;transform:translateY(-50px) rotate(0deg)}100%{opacity:0;transform:translateY(80px) rotate(180deg)}}';
+document.head.appendChild(confettiStyle);
+
+// ═══════════════════════════════════════
+// GOALS
+// ═══════════════════════════════════════
+function addGoal() {
+  const name = prompt('Enter your study goal:');
+  if(!name) return;
+  state.goals.push({name,done:false});
+  renderGoals();
+  saveToStorage();
+}
+
+function renderGoals() {
+  const el = document.getElementById('sessionGoals');
+  if(!state.goals.length){el.innerHTML='<div style="font-size:13px;color:var(--muted);margin-bottom:14px;">No goals yet. Add your study goals above. ✍️</div>';return;}
+  el.innerHTML = state.goals.map((g,i)=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface);border-radius:8px;margin-bottom:6px;cursor:pointer;" onclick="toggleGoal(${i})">
+      <span style="font-size:16px">${g.done?'✅':'⬜'}</span>
+      <span style="font-size:13px;${g.done?'text-decoration:line-through;color:var(--muted)':''}">${g.name}</span>
+    </div>
+  `).join('');
+}
+
+function toggleGoal(i) {
+  state.goals[i].done = !state.goals[i].done;
+  renderGoals();
+  saveToStorage();
+}
+
+// ═══════════════════════════════════════
+// MOTIVATION / QUOTES
+// ═══════════════════════════════════════
+const quotes = [
+  {text:"The secret of getting ahead is getting started.",author:"Mark Twain"},
+  {text:"It always seems impossible until it's done.",author:"Nelson Mandela"},
+  {text:"Success is not final, failure is not fatal: it is the courage to continue that counts.",author:"Winston Churchill"},
+  {text:"The only way to do great work is to love what you do.",author:"Steve Jobs"},
+  {text:"Education is the most powerful weapon which you can use to change the world.",author:"Nelson Mandela"},
+  {text:"I find that the harder I work, the more luck I seem to have.",author:"Thomas Jefferson"},
+  {text:"Don't watch the clock; do what it does. Keep going.",author:"Sam Levenson"},
+  {text:"You don't have to be great to start, but you have to start to be great.",author:"Zig Ziglar"},
+  {text:"The future belongs to those who believe in the beauty of their dreams.",author:"Eleanor Roosevelt"},
+  {text:"Strive not to be a success, but rather to be of value.",author:"Albert Einstein"},
+  {text:"Believe you can and you're halfway there.",author:"Theodore Roosevelt"},
+  {text:"Your time is limited, don't waste it living someone else's life.",author:"Steve Jobs"},
+  {text:"The only place where success comes before work is in the dictionary.",author:"Vidal Sassoon"},
+  {text:"Hard work beats talent when talent doesn't work hard.",author:"Tim Notke"},
+  {text:"Success usually comes to those who are too busy to be looking for it.",author:"Henry David Thoreau"},
+  {text:"The difference between ordinary and extraordinary is that little extra.",author:"Jimmy Johnson"},
+  {text:"There are no shortcuts to any place worth going.",author:"Beverly Sills"},
+  {text:"An investment in knowledge pays the best interest.",author:"Benjamin Franklin"},
+  {text:"Dreams don't work unless you do.",author:"John C. Maxwell"},
+  {text:"Push yourself, because no one else is going to do it for you.",author:"Unknown"},
+  {text:"Wake up with determination. Go to bed with satisfaction.",author:"George Lorimer"},
+  {text:"Great things never come from comfort zones.",author:"Neil Strauss"},
+  {text:"The expert in anything was once a beginner.",author:"Helen Hayes"},
+  {text:"Study while others are sleeping; work while others are loafing.",author:"William Arthur Ward"},
+];
+
+let currentQuoteIndex = Math.floor(Math.random()*quotes.length);
+
+function showQuote(i) {
+  const q = quotes[i];
+  document.getElementById('quoteText').textContent = '"'+q.text+'"';
+  document.getElementById('quoteAuthor').textContent = '— '+q.author;
+}
+function nextQuote() { currentQuoteIndex=(currentQuoteIndex+1)%quotes.length; showQuote(currentQuoteIndex); }
+function prevQuote() { currentQuoteIndex=(currentQuoteIndex-1+quotes.length)%quotes.length; showQuote(currentQuoteIndex); }
+function randomQuote() { currentQuoteIndex=Math.floor(Math.random()*quotes.length); showQuote(currentQuoteIndex); }
+
+const successPeople = [
+  {name:'Elon Musk',fact:'Reads 10 hours/day. Self-taught rocket science.', emoji:'🚀'},
+  {name:'Bill Gates',fact:'Reads 50 books per year. Never stopped learning.',emoji:'📚'},
+  {name:'Warren Buffett',fact:'Spends 80% of his day reading and thinking.',emoji:'💡'},
+  {name:'Kobe Bryant',fact:'Woke up at 4am daily to outwork everyone.',emoji:'🏀'},
+  {name:'Sundar Pichai',fact:'First-gen student who studied 16h/day for IIT.',emoji:'🌐'},
+  {name:'A.P.J. Abdul Kalam',fact:'Read all night. Slept only 4-5 hours. Never gave up.',emoji:'🛸'},
+];
+
+function renderSuccessPeople() {
+  document.getElementById('successPeople').innerHTML = successPeople.map(p=>`
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center;">
+      <div style="font-size:32px;margin-bottom:8px">${p.emoji}</div>
+      <div style="font-size:13px;font-weight:600;margin-bottom:6px">${p.name}</div>
+      <div style="font-size:11px;color:var(--muted);line-height:1.5">${p.fact}</div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════
+// STREAK
+// ═══════════════════════════════════════
+function claimStreak() {
+  state.streak++;
+  updateStreakDisplay();
+  saveToStorage();
+  showToast(`🔥 ${state.streak} day streak!`);
+}
+
+function updateStreakDisplay() {
+  document.getElementById('streakNum').textContent = state.streak;
+  document.getElementById('statStreak').textContent = state.streak;
+}
+
+// ═══════════════════════════════════════
+// STATS & HISTORY
+// ═══════════════════════════════════════
+function updateStats() {
+  document.getElementById('statPomos').textContent = state.totalPomos;
+  const h = Math.floor(state.totalFocusSecs/3600);
+  const m = Math.floor((state.totalFocusSecs%3600)/60);
+  document.getElementById('statFocusTime').textContent = `${h}h ${m}m`;
+}
+
+function renderSessionHistory() {
+  const el = document.getElementById('sessionHistory');
+  if(!state.sessions.length){el.innerHTML='<div style="color:var(--muted)">No sessions yet. Start your first session! 🚀</div>';return;}
+  el.innerHTML = [...state.sessions].reverse().slice(0,10).map(s=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--surface);border-radius:8px;margin-bottom:6px;">
+      <div>
+        <div style="font-size:13px;font-weight:500">${s.subject}</div>
+        <div style="font-size:11px;color:var(--muted)">${s.type}</div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);font-family:var(--mono)">${s.time}</div>
+    </div>
+  `).join('');
+}
+
+const achievementsList = [
+  {id:'first',icon:'🌱',name:'First Step',desc:'Complete your first Pomodoro',check:()=>state.totalPomos>=1},
+  {id:'five',icon:'⭐',name:'Getting Warmed Up',desc:'Complete 5 Pomodoros',check:()=>state.totalPomos>=5},
+  {id:'ten',icon:'🔥',name:'On Fire',desc:'Complete 10 Pomodoros',check:()=>state.totalPomos>=10},
+  {id:'hour',icon:'⏱',name:'One Hour Strong',desc:'Accumulate 1 hour of focus',check:()=>state.totalFocusSecs>=3600},
+  {id:'streak3',icon:'📅',name:'Consistent',desc:'Maintain a 3-day streak',check:()=>state.streak>=3},
+  {id:'strict',icon:'🔒',name:'Iron Will',desc:'Enable Strict Mode',check:()=>state.strictMode},
+];
+
+function renderAchievements() {
+  document.getElementById('achievements').innerHTML = achievementsList.map(a=>{
+    const earned = a.check();
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:${earned?'rgba(245,166,35,.08)':'var(--surface)'};border:1px solid ${earned?'rgba(245,166,35,.25)':'var(--border)'};border-radius:8px;opacity:${earned?1:.5}">
+      <span style="font-size:24px">${a.icon}</span>
+      <div>
+        <div style="font-size:13px;font-weight:600">${a.name} ${earned?'<span style="color:var(--accent);font-size:11px">✓ Earned</span>':''}</div>
+        <div style="font-size:11px;color:var(--muted)">${a.desc}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════
+let toastTimer;
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.className = 'toast show' + (type?' '+type:'');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+// ═══════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════
+function saveToStorage() {
+  try {
+    const data = {
+      customBlocks:state.customBlocks,
+      allowedChannels:state.allowedChannels,
+      totalPomos:state.totalPomos,
+      totalFocusSecs:state.totalFocusSecs,
+      streak:state.streak,
+      sessions:state.sessions.slice(-50),
+      goals:state.goals,
+      strictMode:state.strictMode,
+      xp:state.xp,
+    };
+    sessionStorage.setItem('focusforge', JSON.stringify(data));
+  } catch(e){}
+}
+
+function loadFromStorage() {
+  try {
+    const raw = sessionStorage.getItem('focusforge');
+    if(!raw) {
+      state.allowedChannels = [...defaultChannels];
+      return;
+    }
+    const d = JSON.parse(raw);
+    Object.assign(state, d);
+    if(!state.allowedChannels.length) state.allowedChannels = [...defaultChannels];
+  } catch(e) {
+    state.allowedChannels = [...defaultChannels];
+  }
+}
+
+// ═══════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════
+function pad(n){return String(n).padStart(2,'0');}
+
+// Init long form display
+state.lfSecsElapsed=0;
+function initLfDisplay(){
+  const h=Math.floor(state.lfDurSecs/3600);
+  const m=Math.floor((state.lfDurSecs%3600)/60);
+  document.getElementById('lfH').textContent=pad(h);
+  document.getElementById('lfM').textContent=pad(m);
+  document.getElementById('lfS').textContent='00';
+}
+
+// Daily quote rotation
+const today = new Date().getDate();
+currentQuoteIndex = today % quotes.length;
+
+// ═══════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════
+init();
+initLfDisplay();
+renderAchievements();
+
+// Show initial strict warning visibility based on state
+document.getElementById('strictWarnTimer').classList.toggle('show', true);
+
+</script>
+</body>
+</html>
