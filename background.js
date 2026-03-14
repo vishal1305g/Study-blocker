@@ -1,11 +1,9 @@
 // FocusForge Background Service Worker
-// Manages: session state, dynamic rules, alarms, notifications
 
 let sessionActive = false;
 let strictMode = false;
 let allowedChannels = [];
 let customBlockedSites = [];
-let dynamicRuleId = 100;
 
 // ── Init ──────────────────────────────────────────────
 chrome.runtime.onInstalled.addListener(async () => {
@@ -17,10 +15,12 @@ chrome.runtime.onInstalled.addListener(async () => {
       'Kurzgesagt','TED-Ed','Physics Wallah','Unacademy','Veritasium',
       'Mark Rober','NileRed','Numberphile'
     ],
+    // Bug 4+8 fix: unified key name — everything uses 'customBlockedSites'
     customBlockedSites: [],
     totalPomos: 0,
     totalFocusSecs: 0,
     streak: 0,
+    xp: 0,
     lastActiveDate: null,
   };
   const existing = await chrome.storage.local.get(null);
@@ -37,7 +37,7 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
   (async () => {
     switch (msg.type) {
       case 'GET_STATE':
-        reply(await getFullState());
+        reply(await chrome.storage.local.get(null));
         break;
       case 'SET_SESSION':
         await setSession(msg.active, msg.strict);
@@ -60,16 +60,31 @@ chrome.runtime.onMessage.addListener((msg, sender, reply) => {
         reply({ ok: true });
         break;
       case 'SAVE_STATS':
-        await saveStats(msg.data);
+        await chrome.storage.local.set(msg.data);
         reply({ ok: true });
         break;
+      // Bug 5 fix: NOTIFY handler restored
       case 'NOTIFY':
-        showNotification(msg.title, msg.body);
+        try {
+          chrome.notifications.create({
+            type: 'basic',
+            title: msg.title || '🍅 FocusForge',
+            message: msg.body || 'Keep going!',
+            priority: 2
+          });
+        } catch(e) {}
         reply({ ok: true });
         break;
+      // Bug 3 fix: OPEN_DASHBOARD handler added
+      case 'OPEN_DASHBOARD':
+        openDashboard();
+        reply({ ok: true });
+        break;
+      default:
+        reply({});
     }
   })();
-  return true; // async reply
+  return true; // keep channel open for async reply
 });
 
 // ── State Sync ────────────────────────────────────────
@@ -85,10 +100,6 @@ async function syncState() {
   broadcastState();
 }
 
-async function getFullState() {
-  return await chrome.storage.local.get(null);
-}
-
 // ── Session Control ───────────────────────────────────
 async function setSession(active, strict) {
   sessionActive = active;
@@ -96,39 +107,48 @@ async function setSession(active, strict) {
   await chrome.storage.local.set({ sessionActive, strictMode });
   await updateDynamicRules();
   broadcastState();
-
-  if (active) {
-    showNotification('🎯 FocusForge Session Started', 'Stay focused. Distractions are blocked.');
-  } else {
-    showNotification('✅ Session Ended', 'Great work! Blocks are lifted.');
-  }
 }
 
 // ── Dynamic Blocking Rules ────────────────────────────
+// All rules are dynamic — nothing blocked unless session is ON
 async function updateDynamicRules() {
-  // Remove all existing dynamic rules first
   const existing = await chrome.declarativeNetRequest.getDynamicRules();
   const removeIds = existing.map(r => r.id);
-  
   const addRules = [];
   let id = 200;
 
   if (sessionActive) {
-    // Always block YouTube Shorts (redirect to youtube.com homepage)
     addRules.push({
       id: id++, priority: 10,
-      action: { type: 'redirect', redirect: { url: 'https://www.youtube.com/?focusforge=1' }},
+      action: { type: 'redirect', redirect: { url: 'https://www.youtube.com/?ff=1' }},
       condition: { urlFilter: 'youtube.com/shorts', resourceTypes: ['main_frame'] }
     });
-
-    // Block Instagram Reels
     addRules.push({
       id: id++, priority: 10,
-      action: { type: 'redirect', redirect: { url: 'https://www.instagram.com/?focusforge=1' }},
+      action: { type: 'redirect', redirect: { url: 'https://www.instagram.com/?ff=1' }},
       condition: { urlFilter: 'instagram.com/reels', resourceTypes: ['main_frame'] }
     });
+    addRules.push({
+      id: id++, priority: 10,
+      action: { type: 'redirect', redirect: { extensionPath: '/blocked.html?site=TikTok' }},
+      condition: { urlFilter: 'tiktok.com', resourceTypes: ['main_frame'] }
+    });
+    addRules.push({
+      id: id++, priority: 10,
+      action: { type: 'redirect', redirect: { extensionPath: '/blocked.html?site=Twitter%2FX' }},
+      condition: { urlFilter: 'twitter.com', resourceTypes: ['main_frame'] }
+    });
+    addRules.push({
+      id: id++, priority: 10,
+      action: { type: 'redirect', redirect: { extensionPath: '/blocked.html?site=Twitter%2FX' }},
+      condition: { urlFilter: '||x.com/', resourceTypes: ['main_frame'] }
+    });
+    addRules.push({
+      id: id++, priority: 10,
+      action: { type: 'redirect', redirect: { extensionPath: '/blocked.html?site=Snapchat' }},
+      condition: { urlFilter: 'snapchat.com', resourceTypes: ['main_frame'] }
+    });
 
-    // Block Reddit (in strict mode)
     if (strictMode) {
       addRules.push({
         id: id++, priority: 10,
@@ -147,7 +167,6 @@ async function updateDynamicRules() {
       });
     }
 
-    // Custom blocked sites
     for (const site of customBlockedSites) {
       const clean = site.replace(/^https?:\/\//, '').replace(/^www\./, '');
       addRules.push({
@@ -158,10 +177,7 @@ async function updateDynamicRules() {
     }
   }
 
-  await chrome.declarativeNetRequest.updateDynamicRules({
-    removeRuleIds: removeIds,
-    addRules
-  });
+  await chrome.declarativeNetRequest.updateDynamicRules({ removeRuleIds: removeIds, addRules });
 }
 
 // ── Channel Management ────────────────────────────────
@@ -204,22 +220,6 @@ async function removeCustomBlock(site) {
   await updateDynamicRules();
 }
 
-// ── Stats ─────────────────────────────────────────────
-async function saveStats(data) {
-  await chrome.storage.local.set(data);
-}
-
-// ── Notifications ─────────────────────────────────────
-function showNotification(title, body) {
-  chrome.notifications.create({
-    type: 'basic',
-    iconUrl: 'icons/icon48.svg',
-    title,
-    message: body,
-    priority: 2
-  });
-}
-
 // ── Broadcast ─────────────────────────────────────────
 function broadcastState() {
   broadcastToTabs({ type: 'STATE_CHANGED', sessionActive, strictMode });
@@ -228,13 +228,27 @@ function broadcastState() {
 async function broadcastToTabs(msg) {
   const tabs = await chrome.tabs.query({});
   for (const tab of tabs) {
-    try {
-      await chrome.tabs.sendMessage(tab.id, msg);
-    } catch(e) {}
+    try { await chrome.tabs.sendMessage(tab.id, msg); } catch(e) {}
   }
 }
 
-// Listen for storage changes
+// ── Open Dashboard ────────────────────────────────────
+function openDashboard() {
+  const dashUrl = chrome.runtime.getURL('dashboard.html');
+  chrome.tabs.query({}, (tabs) => {
+    const existing = tabs.find(t => t.url === dashUrl);
+    if (existing) {
+      chrome.tabs.update(existing.id, { active: true });
+      chrome.windows.update(existing.windowId, { focused: true });
+    } else {
+      chrome.tabs.create({ url: dashUrl });
+    }
+  });
+}
+
+chrome.action.onClicked.addListener(openDashboard);
+
+// ── Storage change listener ───────────────────────────
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area === 'local') {
     if (changes.sessionActive || changes.strictMode || changes.customBlockedSites) {

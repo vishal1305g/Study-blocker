@@ -46,8 +46,7 @@
     }
   ],
   "action": {
-    "default_popup": "popup.html",
-    "default_title": "FocusForge"
+    "default_title": "FocusForge — Open Dashboard"
   },
   "icons": {
     "16": "icons/icon16.svg",
