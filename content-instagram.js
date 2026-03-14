@@ -1,55 +1,66 @@
 // FocusForge — Instagram Content Script
-// Blocks Reels tab, Reels feed items, Reels explore section
 
 (function() {
   'use strict';
 
   async function init() {
     const res = await chrome.storage.local.get('sessionActive');
-    if (!res.sessionActive) return;
-    blockReels();
-    observeDOM();
+    const active = res.sessionActive || false;
+    applySession(active);
+  }
+
+  function applySession(active) {
+    if (active) {
+      document.documentElement.classList.add('ff-session-active');
+      blockReels();
+      startObserver();
+    } else {
+      document.documentElement.classList.remove('ff-session-active');
+      restoreAll();
+    }
   }
 
   function blockReels() {
-    const url = window.location.href;
-    // Redirect /reels to home
-    if (url.includes('/reels')) {
-      window.location.replace('https://www.instagram.com/?focusforge_blocked=reels');
+    if (window.location.pathname.startsWith('/reels')) {
+      window.location.replace('https://www.instagram.com/?ff=1');
       return;
     }
     hideReelsElements();
   }
 
   function hideReelsElements() {
-    // Hide Reels navigation tab
-    document.querySelectorAll('a[href="/reels/"]').forEach(el => {
+    document.querySelectorAll('a[href="/reels/"], a[href="/reels"]').forEach(el => {
       const parent = el.closest('div[role="listitem"], li, div');
-      if (parent) parent.style.display = 'none';
-      else el.style.display = 'none';
+      if (parent) { parent.style.display = 'none'; parent.setAttribute('data-ff-hidden','1'); }
+      else { el.style.display = 'none'; el.setAttribute('data-ff-hidden','1'); }
     });
 
-    // Hide Reels items in feed (they use video with specific aria)
     document.querySelectorAll('article').forEach(article => {
+      if (article.getAttribute('data-ff-hidden')) return;
       const isReel = article.querySelector('video[playsinline]') &&
                      article.querySelector('a[href*="/reel/"]');
       if (isReel) {
         article.style.display = 'none';
-        article.setAttribute('data-ff-hidden', 'reel');
+        article.setAttribute('data-ff-hidden', '1');
       }
     });
-
-    // Hide stories if strict mode
   }
 
-  function observeDOM() {
+  function startObserver() {
     const observer = new MutationObserver(hideReelsElements);
-    observer.observe(document.body, { childList: true, subtree: true });
+    observer.observe(document.body || document.documentElement, { childList: true, subtree: true });
+  }
+
+  function restoreAll() {
+    document.querySelectorAll('[data-ff-hidden]').forEach(el => {
+      el.style.display = '';
+      el.removeAttribute('data-ff-hidden');
+    });
   }
 
   chrome.runtime.onMessage.addListener((msg) => {
     if (msg.type === 'STATE_CHANGED') {
-      if (msg.sessionActive) blockReels();
+      applySession(msg.sessionActive);
     }
   });
 

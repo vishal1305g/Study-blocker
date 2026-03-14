@@ -1,5 +1,7 @@
-/* FocusForge — Instagram Reels CSS Blocker */
-/* Hide reels nav and reel content */
-a[href="/reels/"] {
+/* FocusForge — Instagram Reels CSS Blocker
+   Only hides elements when JS adds ff-session-active class to <html> */
+
+html.ff-session-active a[href="/reels/"],
+html.ff-session-active a[href="/reels"] {
   display: none !important;
 }

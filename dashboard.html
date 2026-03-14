@@ -167,6 +167,26 @@ nav button:hover:not(.act){color:var(--txt);}
  background:var(--surf);border-radius:7px;margin-bottom:4px;cursor:pointer;}
 .goal-r:hover{background:#1a1a24;}
 .pcard{background:var(--surf);border:1px solid var(--bdr);border-radius:9px;padding:14px;text-align:center;}
+
+/* ── MUSIC TAB ── */
+.music-svc-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:10px 18px;border-radius:9px;border:1px solid var(--bdr);
+  background:var(--card);color:var(--mut);font-family:'DM Sans',sans-serif;
+  font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;}
+.music-svc-btn:hover{border-color:var(--acc);color:var(--txt);}
+.music-svc-btn.act{border-color:var(--acc);background:rgba(245,166,35,.1);color:var(--acc);}
+.music-pl-item{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;
+  background:var(--surf);border:1px solid var(--bdr);border-radius:8px;
+  margin-bottom:7px;cursor:pointer;transition:all .2s;}
+.music-pl-item:hover{border-color:var(--acc);background:rgba(245,166,35,.05);}
+.music-pl-item.act{border-color:var(--acc);background:rgba(245,166,35,.08);}
+.music-pl-ico{width:40px;height:40px;border-radius:7px;display:flex;
+  align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.music-pl-name{font-size:13px;font-weight:600;margin-bottom:2px;}
+.music-pl-desc{font-size:10px;color:var(--mut);}
+
 ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px;}
 @media(max-width:700px){.main{padding:14px 12px;}.g2,.g3{grid-template-columns:1fr;}
  header{padding:12px 14px;}.tdig{font-size:36px;}.lftime{font-size:44px;}}
@@ -191,6 +211,7 @@ nav button:hover:not(.act){color:var(--txt);}
   <button onclick="gt('lf',this)">📚 Long Session</button>
   <button onclick="gt('blk',this)">🛡 Blocker</button>
   <button onclick="gt('ch',this)">📺 Channels</button>
+  <button onclick="gt('music',this)">🎵 Music</button>
   <button onclick="gt('mot',this)">🔥 Motivation</button>
   <button onclick="gt('stats',this)">📊 Stats</button>
 </nav>
@@ -415,6 +436,151 @@ nav button:hover:not(.act){color:var(--txt);}
   </div>
 </div>
 
+
+<!-- ══ MUSIC ══ -->
+<div class="tab" id="tab-music">
+
+  <!-- Service selector -->
+  <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;">
+    <button class="music-svc-btn act" id="svc-spotify"   onclick="switchSvc('spotify',this)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="#1DB954"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+      Spotify
+    </button>
+    <button class="music-svc-btn" id="svc-ytmusic" onclick="switchSvc('ytmusic',this)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="#FF0000"><path d="M12 0C5.376 0 0 5.376 0 12s5.376 12 12 12 12-5.376 12-12S18.624 0 12 0zm0 19.104c-3.924 0-7.104-3.18-7.104-7.104S8.076 4.896 12 4.896s7.104 3.18 7.104 7.104-3.18 7.104-7.104 7.104zm0-13.332c-3.432 0-6.228 2.796-6.228 6.228S8.568 18.228 12 18.228s6.228-2.796 6.228-6.228S15.432 5.772 12 5.772zM9.684 15.54V8.46L16.2 12l-6.516 3.54z"/></svg>
+      YouTube Music
+    </button>
+    <button class="music-svc-btn" id="svc-youtube"  onclick="switchSvc('youtube',this)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="#FF0000"><path d="M23.495 6.205a3.007 3.007 0 0 0-2.088-2.088c-1.87-.501-9.396-.501-9.396-.501s-7.507-.01-9.396.501A3.007 3.007 0 0 0 .527 6.205a31.247 31.247 0 0 0-.522 5.805 31.247 31.247 0 0 0 .522 5.783 3.007 3.007 0 0 0 2.088 2.088c1.868.502 9.396.502 9.396.502s7.506 0 9.396-.502a3.007 3.007 0 0 0 2.088-2.088 31.247 31.247 0 0 0 .5-5.783 31.247 31.247 0 0 0-.5-5.805zM9.609 15.601V8.408l6.264 3.602z"/></svg>
+      YouTube
+    </button>
+    <button class="music-svc-btn" id="svc-apple"    onclick="switchSvc('apple',this)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="#FC3C44"><path d="M23.994 6.124a9.23 9.23 0 0 0-.24-2.19c-.317-1.31-1.062-2.31-2.18-3.043a5.022 5.022 0 0 0-1.877-.726 10.496 10.496 0 0 0-1.564-.15c-.04-.003-.083-.01-.124-.013H5.986c-.152.01-.303.017-.455.026C4.786.07 4.043.15 3.34.428 2.004.958 1.04 1.88.475 3.208a4.93 4.93 0 0 0-.32 1.358c-.068.625-.068 1.254-.078 1.88v12.23c0 .763.1 1.498.393 2.193.65 1.55 1.748 2.589 3.382 3.006.536.14 1.09.19 1.65.23.66.05 1.32.048 1.98.048h9.92c.58 0 1.16-.01 1.74-.05.5-.03.988-.09 1.47-.22 1.668-.447 2.778-1.488 3.405-3.087.21-.544.3-1.114.33-1.694.04-.752.04-1.503.04-2.255V8.13c-.002-.665-.017-1.33-.093-1.994zm-5.559 4.99l-5.578 3.22v-6.44l5.578 3.22z"/></svg>
+      Apple Music
+    </button>
+  </div>
+
+  <!-- Embedded players -->
+  <div id="music-panel-spotify">
+    <div class="g2" style="align-items:start;margin-bottom:16px">
+      <div class="card">
+        <div class="ct">🎵 STUDY PLAYLISTS</div>
+        <div id="sp-playlists"></div>
+      </div>
+      <div class="card">
+        <div class="ct">▶ NOW PLAYING</div>
+        <div id="sp-embed-wrap">
+          <iframe id="sp-embed"
+            src="https://open.spotify.com/embed/playlist/37i9dQZF1DX8Uebhn9wzrS?utm_source=generator&theme=0"
+            width="100%" height="380" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+            loading="lazy" style="border-radius:12px;"></iframe>
+        </div>
+        <div style="margin-top:12px;padding:10px;background:var(--surf);border-radius:7px;font-size:11px;color:var(--mut);line-height:1.7">
+          💡 <strong style="color:var(--txt)">Tip:</strong> Needs Spotify installed or browser login for full playback. Preview works without login.
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">🔗 OPEN IN APP</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a href="https://open.spotify.com/playlist/37i9dQZF1DX8Uebhn9wzrS" target="_blank" class="btn bp bsm">Lo-Fi Beats ↗</a>
+        <a href="https://open.spotify.com/playlist/37i9dQZF1DWZeKCadgRdKQ" target="_blank" class="btn bg bsm">Deep Focus ↗</a>
+        <a href="https://open.spotify.com/playlist/37i9dQZF1DX9sIqqvKsjEJ" target="_blank" class="btn bg bsm">Study Music ↗</a>
+        <a href="https://open.spotify.com/playlist/37i9dQZF1DWXLeA8Omikj7" target="_blank" class="btn bg bsm">Brain Food ↗</a>
+        <a href="https://open.spotify.com/playlist/37i9dQZF1DX4sWSpwq3LiO" target="_blank" class="btn bg bsm">Peaceful Piano ↗</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="music-panel-ytmusic" style="display:none">
+    <div class="g2" style="align-items:start;margin-bottom:16px">
+      <div class="card">
+        <div class="ct">🎵 STUDY PLAYLISTS</div>
+        <div id="ytm-playlists"></div>
+      </div>
+      <div class="card">
+        <div class="ct">▶ NOW PLAYING</div>
+        <iframe id="ytm-embed"
+          src="https://www.youtube.com/embed/videoseries?list=PLofht4PTcKYnaH8w5olJCI-wEoCgyxRRK&autoplay=0"
+          width="100%" height="315" frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen style="border-radius:12px;"></iframe>
+        <div style="margin-top:12px;padding:10px;background:var(--surf);border-radius:7px;font-size:11px;color:var(--mut);line-height:1.7">
+          💡 <strong style="color:var(--txt)">Tip:</strong> YouTube Music requires a Google account. Click "Open in App" for full experience.
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">🔗 OPEN IN APP</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a href="https://music.youtube.com/playlist?list=PLofht4PTcKYnaH8w5olJCI-wEoCgyxRRK" target="_blank" class="btn bp bsm">Lo-Fi Chill ↗</a>
+        <a href="https://music.youtube.com/search?q=study+music" target="_blank" class="btn bg bsm">Search Study Music ↗</a>
+        <a href="https://music.youtube.com/search?q=lo+fi+hip+hop" target="_blank" class="btn bg bsm">Lo-Fi Hip Hop ↗</a>
+        <a href="https://music.youtube.com/search?q=focus+classical" target="_blank" class="btn bg bsm">Focus Classical ↗</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="music-panel-youtube" style="display:none">
+    <div class="g2" style="align-items:start;margin-bottom:16px">
+      <div class="card">
+        <div class="ct">🎵 STUDY STREAMS</div>
+        <div id="yt-playlists"></div>
+      </div>
+      <div class="card">
+        <div class="ct">▶ NOW PLAYING</div>
+        <iframe id="yt-embed"
+          src="https://www.youtube.com/embed/jfKfPfyJRdk?autoplay=0"
+          width="100%" height="315" frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen style="border-radius:12px;"></iframe>
+        <div style="margin-top:12px;padding:10px;background:var(--surf);border-radius:7px;font-size:11px;color:var(--mut);line-height:1.7">
+          💡 <strong style="color:var(--txt)">Tip:</strong> These are live Lo-Fi streams — they run 24/7. No account needed.
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">🔗 OPEN IN TAB</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a href="https://www.youtube.com/watch?v=jfKfPfyJRdk" target="_blank" class="btn bp bsm">Lo-Fi Girl (Live) ↗</a>
+        <a href="https://www.youtube.com/watch?v=4xDzrJKXOOY" target="_blank" class="btn bg bsm">Synthwave Radio ↗</a>
+        <a href="https://www.youtube.com/watch?v=5qap5aO4i9A" target="_blank" class="btn bg bsm">Lo-Fi Chill ↗</a>
+        <a href="https://www.youtube.com/watch?v=DWcJFNfaw9c" target="_blank" class="btn bg bsm">Deep Focus ↗</a>
+        <a href="https://www.youtube.com/watch?v=lTRiuFIWV54" target="_blank" class="btn bg bsm">Jazz Classics ↗</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="music-panel-apple" style="display:none">
+    <div class="g2" style="align-items:start;margin-bottom:16px">
+      <div class="card">
+        <div class="ct">🎵 STUDY PLAYLISTS</div>
+        <div id="am-playlists"></div>
+      </div>
+      <div class="card">
+        <div class="ct">▶ NOW PLAYING</div>
+        <iframe id="am-embed"
+          allow="autoplay *; encrypted-media *; fullscreen *; clipboard-write"
+          frameborder="0" height="450" style="width:100%;max-width:660px;overflow:hidden;border-radius:12px;"
+          sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-storage-access-by-user-activation allow-top-navigation-by-user-activation"
+          src="https://embed.music.apple.com/us/playlist/pure-focus/pl.u-55D6ykoFVjejpE"></iframe>
+        <div style="margin-top:12px;padding:10px;background:var(--surf);border-radius:7px;font-size:11px;color:var(--mut);line-height:1.7">
+          💡 <strong style="color:var(--txt)">Tip:</strong> Full playback needs Apple Music subscription. 30-second previews work free.
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="ct">🔗 OPEN IN APP</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a href="https://music.apple.com/us/playlist/pure-focus/pl.u-55D6ykoFVjejpE" target="_blank" class="btn bp bsm">Pure Focus ↗</a>
+        <a href="https://music.apple.com/us/playlist/a-little-calmer/pl.2b0e6e332fdf4b4aa9a9cf57d9e2c4b0" target="_blank" class="btn bg bsm">A Little Calmer ↗</a>
+        <a href="https://music.apple.com/search?term=study+music" target="_blank" class="btn bg bsm">Search Study Music ↗</a>
+        <a href="https://music.apple.com/search?term=lo+fi" target="_blank" class="btn bg bsm">Lo-Fi ↗</a>
+      </div>
+    </div>
+  </div>
+
+</div>
 </div><!-- main -->
 </div><!-- app -->
 
@@ -499,6 +665,7 @@ function boot() {
   lfSyncDisp();
   document.getElementById('qdate').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
   showQ(new Date().getDate() % QS.length);
+  loadMusicPlaylists();
 }
 
 // ─── TABS ──────────────────────────────────────────────────────────
@@ -618,7 +785,7 @@ function pmDisp(){
 }
 function arcUpd(){
   const a=document.getElementById('parc');
-  a.style.strokeDashoffset=CIRC*(pmSecs/pmTotal);
+  a.style.strokeDashoffset=CIRC*(1-(pmSecs/pmTotal));
   a.style.stroke={focus:'#f5a623',short:'#22c55e',long:'#3b82f6'}[pmPhase];
 }
 function buildDots(){
@@ -659,12 +826,31 @@ const DEFBLK=[{e:'🎵',n:'TikTok',d:'Short-form video'},{e:'📱',n:'YouTube Sh
 function renderDefBlocks(){document.getElementById('defblk').innerHTML=DEFBLK.map(b=>'<div class="blit" style="border-left:3px solid var(--red)"><div class="bll"><div class="bico" style="background:rgba(232,67,90,.1)">'+b.e+'</div><div><div class="bname">'+b.n+'</div><div class="bdesc">'+b.d+'</div></div></div><span class="bdg bdg-b">BLOCKED</span></div>').join('');}
 function addCB(){const v=document.getElementById('cbinp').value.trim();if(!v)return;if(!cblocks.includes(v)){cblocks.push(v);document.getElementById('cbinp').value='';save({cblocks});sendToExt({type:'ADD_BLOCK',site:v});renderCBlocks();toast('🚫 '+v+' blocked','ok');}}
 function remCB(s){cblocks=cblocks.filter(c=>c!==s);save({cblocks});sendToExt({type:'REMOVE_BLOCK',site:s});renderCBlocks();}
-function renderCBlocks(){document.getElementById('cblist').innerHTML=cblocks.map(s=>'<div class="blit" style="border-left:3px solid var(--red);margin-bottom:5px"><div class="bll"><div class="bico" style="background:rgba(232,67,90,.1)">🌐</div><div class="bname">'+s+'</div></div><button class="btn bg bsm" onclick="remCB(\''+s.replace(/'/g,"\\'")+'\')")>✕</button></div>').join('')||'<div style="font-size:11px;color:var(--mut)">No custom blocks yet.</div>';}
+function renderCBlocks(){
+  const el=document.getElementById('cblist');
+  if(!cblocks.length){el.innerHTML='<div style="font-size:11px;color:var(--mut)">No custom blocks yet.</div>';return;}
+  el.innerHTML='';
+  cblocks.forEach(s=>{
+    const d=document.createElement('div');
+    d.className='blit';d.style.cssText='border-left:3px solid var(--red);margin-bottom:5px;';
+    d.innerHTML='<div class="bll"><div class="bico" style="background:rgba(232,67,90,.1)">🌐</div><div class="bname">'+s+'</div></div>';
+    const btn=document.createElement('button');btn.className='btn bg bsm';btn.textContent='✕';
+    btn.onclick=()=>remCB(s);d.appendChild(btn);el.appendChild(d);
+  });
+}
 
 // ─── CHANNELS ──────────────────────────────────────────────────────
 function addCh(){const v=document.getElementById('chinp').value.trim();if(!v||channels.includes(v))return;channels.push(v);document.getElementById('chinp').value='';save({channels});sendToExt({type:'ADD_CHANNEL',channel:v});renderChs();toast('✅ '+v+' allowed','ok');}
 function remCh(n){channels=channels.filter(c=>c!==n);save({channels});sendToExt({type:'REMOVE_CHANNEL',channel:n});renderChs();}
-function renderChs(){document.getElementById('chtags').innerHTML=channels.map(c=>'<span class="chtag">📺 '+c+' <button onclick="remCh(\''+c.replace(/'/g,"\\'")+'\')")>✕</button></span>').join('');}
+function renderChs(){
+  const el=document.getElementById('chtags');el.innerHTML='';
+  channels.forEach(c=>{
+    const sp=document.createElement('span');sp.className='chtag';
+    sp.innerHTML='📺 '+c+' ';
+    const btn=document.createElement('button');btn.textContent='✕';
+    btn.onclick=()=>remCh(c);sp.appendChild(btn);el.appendChild(sp);
+  });
+}
 
 // ─── GOALS ─────────────────────────────────────────────────────────
 function addGoal(){const n=prompt('Enter study goal:');if(!n)return;goals.push({n,done:false});save({goals});renderGoals();}
@@ -697,6 +883,136 @@ function toast(msg,type=''){const el=document.getElementById('tst');document.get
 
 // ─── UTIL ──────────────────────────────────────────────────────────
 function pad(n){return String(n).padStart(2,'0');}
+
+// ─── MUSIC TAB ───────────────────────────────────────────────────────
+const MUSIC_DATA = {
+  spotify: {
+    playlists: [
+      { name:'Lo-Fi Beats',      desc:'Chill beats to relax/study to',      id:'37i9dQZF1DX8Uebhn9wzrS', type:'playlist' },
+      { name:'Deep Focus',        desc:'Keep calm and focus',                 id:'37i9dQZF1DWZeKCadgRdKQ', type:'playlist' },
+      { name:'Study Music',       desc:'Background studying music',           id:'37i9dQZF1DX9sIqqvKsjEJ', type:'playlist' },
+      { name:'Brain Food',        desc:'Powered by Spotify',                  id:'37i9dQZF1DWXLeA8Omikj7', type:'playlist' },
+      { name:'Peaceful Piano',    desc:'Relaxing piano music',                id:'37i9dQZF1DX4sWSpwq3LiO', type:'playlist' },
+      { name:'Instrumental Study',desc:'Music to help you focus',             id:'37i9dQZF1DX0jgyuFvK76a', type:'playlist' },
+    ]
+  },
+  ytmusic: {
+    playlists: [
+      { name:'Lo-Fi Chill',       desc:'Relaxing Lo-Fi beats',                id:'PLofht4PTcKYnaH8w5olJCI-wEoCgyxRRK', type:'playlist' },
+      { name:'Study Beats',       desc:'Beats to study to',                   id:'PL6NdkXsPL07zLT7g_NReP4OB7P5mQpQQj', type:'playlist' },
+      { name:'Classical Focus',   desc:'Classical music for studying',         id:'PLGqIqCaFSCOYqjdHHHpzJiBz8Y8mO8S1E', type:'playlist' },
+      { name:'Ambient Focus',     desc:'Ambient sounds to focus',              id:'PLbSQbCrFOnTm78hjGSYPBpgFBjgxqOv1x', type:'playlist' },
+    ]
+  },
+  youtube: {
+    playlists: [
+      { name:'Lo-Fi Girl (Live)',  desc:'24/7 live lo-fi radio',               id:'jfKfPfyJRdk', type:'video' },
+      { name:'Synthwave Radio',   desc:'Synthwave & retrowave 24/7',           id:'4xDzrJKXOOY', type:'video' },
+      { name:'Lo-Fi Chill Beats', desc:'Relaxing lo-fi chill beats',           id:'5qap5aO4i9A', type:'video' },
+      { name:'Deep Focus Music',  desc:'Music to help you study',              id:'DWcJFNfaw9c', type:'video' },
+      { name:'Jazz for Study',    desc:'Smooth jazz classics',                 id:'lTRiuFIWV54', type:'video' },
+      { name:'Nature & Rain',     desc:'Rain sounds for focus',                id:'q76bMs-NwRk', type:'video' },
+    ]
+  },
+  apple: {
+    playlists: [
+      { name:'Pure Focus',        desc:'Apple Music curated focus',            id:'pl.u-55D6ykoFVjejpE',             type:'playlist' },
+      { name:'A Little Calmer',   desc:'Calming background music',             id:'pl.2b0e6e332fdf4b4aa9a9cf57d9e2c4b0', type:'playlist' },
+      { name:'Intense Studying',  desc:'Music for deep study sessions',        id:'pl.u-d2b0592e12a04750a781f6dbfcaef15c', type:'playlist' },
+      { name:'Classical Essentials',desc:'Best classical pieces',              id:'pl.d0dde5e1e6a84b3490e8de48d48bde94', type:'playlist' },
+    ]
+  }
+};
+
+let curSvc = 'spotify';
+let curMusicIdx = { spotify:0, ytmusic:0, youtube:0, apple:0 };
+
+function switchSvc(svc, btn) {
+  curSvc = svc;
+  document.querySelectorAll('.music-svc-btn').forEach(b => b.classList.remove('act'));
+  btn.classList.add('act');
+  ['spotify','ytmusic','youtube','apple'].forEach(s => {
+    document.getElementById('music-panel-'+s).style.display = s===svc ? 'block' : 'none';
+  });
+}
+
+function loadMusicPlaylists() {
+  // Spotify playlists
+  const spEl = document.getElementById('sp-playlists');
+  if (spEl) {
+    spEl.innerHTML = '';
+    MUSIC_DATA.spotify.playlists.forEach((pl,i) => {
+      const d = document.createElement('div');
+      d.className = 'music-pl-item' + (i===curMusicIdx.spotify?' act':'');
+      d.onclick = () => { 
+        curMusicIdx.spotify = i;
+        document.querySelectorAll('#sp-playlists .music-pl-item').forEach((el,j) => el.classList.toggle('act', j===i));
+        document.getElementById('sp-embed').src = 
+          'https://open.spotify.com/embed/playlist/'+pl.id+'?utm_source=generator&theme=0';
+      };
+      d.innerHTML = '<div class="music-pl-ico" style="background:rgba(29,185,84,.12)">🎵</div>'
+        +'<div><div class="music-pl-name">'+pl.name+'</div><div class="music-pl-desc">'+pl.desc+'</div></div>';
+      spEl.appendChild(d);
+    });
+  }
+
+  // YouTube Music playlists
+  const ytmEl = document.getElementById('ytm-playlists');
+  if (ytmEl) {
+    ytmEl.innerHTML = '';
+    MUSIC_DATA.ytmusic.playlists.forEach((pl,i) => {
+      const d = document.createElement('div');
+      d.className = 'music-pl-item' + (i===curMusicIdx.ytmusic?' act':'');
+      d.onclick = () => {
+        curMusicIdx.ytmusic = i;
+        document.querySelectorAll('#ytm-playlists .music-pl-item').forEach((el,j) => el.classList.toggle('act', j===i));
+        document.getElementById('ytm-embed').src = 
+          'https://www.youtube.com/embed/videoseries?list='+pl.id+'&autoplay=0';
+      };
+      d.innerHTML = '<div class="music-pl-ico" style="background:rgba(255,0,0,.1)">🎶</div>'
+        +'<div><div class="music-pl-name">'+pl.name+'</div><div class="music-pl-desc">'+pl.desc+'</div></div>';
+      ytmEl.appendChild(d);
+    });
+  }
+
+  // YouTube streams
+  const ytEl = document.getElementById('yt-playlists');
+  if (ytEl) {
+    ytEl.innerHTML = '';
+    MUSIC_DATA.youtube.playlists.forEach((pl,i) => {
+      const d = document.createElement('div');
+      d.className = 'music-pl-item' + (i===curMusicIdx.youtube?' act':'');
+      d.onclick = () => {
+        curMusicIdx.youtube = i;
+        document.querySelectorAll('#yt-playlists .music-pl-item').forEach((el,j) => el.classList.toggle('act', j===i));
+        document.getElementById('yt-embed').src = 
+          'https://www.youtube.com/embed/'+pl.id+'?autoplay=0';
+      };
+      d.innerHTML = '<div class="music-pl-ico" style="background:rgba(255,0,0,.1)">📺</div>'
+        +'<div><div class="music-pl-name">'+pl.name+'</div><div class="music-pl-desc">'+pl.desc+'</div></div>';
+      ytEl.appendChild(d);
+    });
+  }
+
+  // Apple Music playlists
+  const amEl = document.getElementById('am-playlists');
+  if (amEl) {
+    amEl.innerHTML = '';
+    MUSIC_DATA.apple.playlists.forEach((pl,i) => {
+      const d = document.createElement('div');
+      d.className = 'music-pl-item' + (i===curMusicIdx.apple?' act':'');
+      d.onclick = () => {
+        curMusicIdx.apple = i;
+        document.querySelectorAll('#am-playlists .music-pl-item').forEach((el,j) => el.classList.toggle('act', j===i));
+        document.getElementById('am-embed').src = 
+          'https://embed.music.apple.com/us/playlist/'+pl.id;
+      };
+      d.innerHTML = '<div class="music-pl-ico" style="background:rgba(252,60,68,.12)">🍎</div>'
+        +'<div><div class="music-pl-name">'+pl.name+'</div><div class="music-pl-desc">'+pl.desc+'</div></div>';
+      amEl.appendChild(d);
+    });
+  }
+}
 
 // ─── BOOT ──────────────────────────────────────────────────────────
 boot();

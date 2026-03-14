@@ -375,15 +375,15 @@
 <script>
 // ═══ STATE ════════════════════════════
 let state = {
-  sessionActive: false, strictMode: true,
+  sessionActive: false, strictMode: false,  // Bug 9 fix: default false, loaded from storage
   timerRunning: false, timerInterval: null,
   pomoPhase: 'focus', pomoSecsLeft: 0, pomoTotalSecs: 0,
   pomoCycle: 0, sessionCount: 1,
-  swRunning: false, swInterval: null, swMs: 0,
+  swRunning: false, swInterval: null, swMs: 0, swLaps: [],
   customRunning: false, customInterval: null, customSecsLeft: 0, customTotalSecs: 0,
   totalPomos: 0, totalFocusSecs: 0, streak: 0, xp: 0,
   allowedChannels: [], customBlocks: [],
-  settings: { shorts:true, reels:true, tiktok:true, twitter:true, strict:true, adult:true },
+  settings: { shorts:true, reels:true, tiktok:true, twitter:true, strict:false, adult:true },
   timerType: 'pomo',
 };
 const CIRC = 408.4; // 2 * PI * 65
@@ -394,7 +394,7 @@ async function init() {
   state.sessionActive = res.sessionActive || false;
   state.strictMode = res.strictMode !== undefined ? res.strictMode : true;
   state.allowedChannels = res.allowedChannels || [];
-  state.customBlocks = res.customBlocks || [];
+  state.customBlocks = res.customBlockedSites || [];  // Bug 4 fix: unified key name
   state.totalPomos = res.totalPomos || 0;
   state.totalFocusSecs = res.totalFocusSecs || 0;
   state.streak = res.streak || 0;
@@ -420,11 +420,23 @@ function switchTab(name, btn) {
 }
 
 // ═══ SESSION TOGGLE ════════════════════
+function sendMsg(msg) {
+  // Bug 6 fix: sendMessage is NOT Promise-based in MV3 — use callback form
+  return new Promise(resolve => {
+    try {
+      chrome.runtime.sendMessage(msg, r => {
+        if (chrome.runtime.lastError) {} // suppress "no receiver" error
+        resolve(r || {});
+      });
+    } catch(e) { resolve({}); }
+  });
+}
+
 async function toggleSession() {
   state.sessionActive = !state.sessionActive;
-  await chrome.storage.local.set({ sessionActive: state.sessionActive, strictMode: state.strictMode });
-  await chrome.runtime.sendMessage({ type:'SET_SESSION', active:state.sessionActive, strict:state.strictMode });
-  updateSessionUI();
+  updateSessionUI(); // update UI immediately, don't wait
+  chrome.storage.local.set({ sessionActive: state.sessionActive, strictMode: state.strictMode });
+  sendMsg({ type:'SET_SESSION', active:state.sessionActive, strict:state.strictMode });
 }
 
 function updateSessionUI() {
@@ -579,7 +591,21 @@ function swReset() {
   updateSwDisplay();
 }
 
-function swLap() { /* lap tracking */ }
+function swLap() {
+  if (!state.swRunning) return;
+  state.swLaps = state.swLaps || [];
+  state.swLaps.push(state.swMs);
+  // Show lap in a small list below stopwatch if element exists
+  const lapEl = document.getElementById('swLapList');
+  if (lapEl) {
+    const item = document.createElement('div');
+    item.style.cssText = 'display:flex;justify-content:space-between;padding:4px 8px;font-family:"Space Mono",monospace;font-size:11px;color:var(--muted);border-bottom:1px solid var(--border)';
+    const ms = state.swMs;
+    const t = pad(Math.floor(ms/3600000))+':'+pad(Math.floor((ms%3600000)/60000))+':'+pad(Math.floor((ms%60000)/1000));
+    item.innerHTML = `<span>Lap ${state.swLaps.length}</span><span style="color:var(--accent)">${t}</span>`;
+    lapEl.insertBefore(item, lapEl.firstChild);
+  }
+}
 
 function updateSwDisplay() {
   const ms = state.swMs;
@@ -636,7 +662,7 @@ function toggleSetting(key, el) {
   if (key==='strict') {
     state.strictMode = state.settings.strict;
     chrome.storage.local.set({strictMode:state.strictMode});
-    chrome.runtime.sendMessage({type:'SET_SESSION',active:state.sessionActive,strict:state.strictMode});
+    sendMsg({type:'SET_SESSION',active:state.sessionActive,strict:state.strictMode});
   }
   chrome.storage.local.set({settings:state.settings});
 }
@@ -655,14 +681,14 @@ function addChannel() {
   state.allowedChannels.push(val);
   document.getElementById('channelInput').value = '';
   chrome.storage.local.set({ allowedChannels: state.allowedChannels });
-  chrome.runtime.sendMessage({ type:'ADD_CHANNEL', channel:val });
+  sendMsg({ type:'ADD_CHANNEL', channel:val });
   renderChannels();
 }
 
 function removeChannel(name) {
   state.allowedChannels = state.allowedChannels.filter(c=>c!==name);
   chrome.storage.local.set({ allowedChannels: state.allowedChannels });
-  chrome.runtime.sendMessage({ type:'REMOVE_CHANNEL', channel:name });
+  sendMsg({ type:'REMOVE_CHANNEL', channel:name });
   renderChannels();
 }
 
@@ -683,16 +709,16 @@ function addCustomBlock() {
   if (!state.customBlocks.includes(val)) {
     state.customBlocks.push(val);
     document.getElementById('customBlockInput').value = '';
-    chrome.storage.local.set({ customBlocks: state.customBlocks });
-    chrome.runtime.sendMessage({ type:'ADD_BLOCK', site:val });
+    chrome.storage.local.set({ customBlockedSites: state.customBlocks }); // Bug 4 fix: unified key
+    sendMsg({ type:'ADD_BLOCK', site:val });
     renderCustomBlocks();
   }
 }
 
 function removeCustomBlock(site) {
   state.customBlocks = state.customBlocks.filter(s=>s!==site);
-  chrome.storage.local.set({ customBlocks: state.customBlocks });
-  chrome.runtime.sendMessage({ type:'REMOVE_BLOCK', site });
+  chrome.storage.local.set({ customBlockedSites: state.customBlocks }); // Bug 4 fix: unified key
+  sendMsg({ type:'REMOVE_BLOCK', site });
   renderCustomBlocks();
 }
 
